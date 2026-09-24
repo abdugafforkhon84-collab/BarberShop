@@ -60,10 +60,35 @@ app.include_router(services.router)
 app.include_router(settings_router.router)
 
 
-@app.get("/")
+@app.get("/api/health")
 def health_check():
     return {"status": "ok", "service": "BarberPro API"}
 
+# Serve frontend statically in production
+import os
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
+
+if os.path.isdir(frontend_dist):
+    # Serve assets directly
+    assets_dir = os.path.join(frontend_dist, "assets")
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+        
+    @app.api_route("/{path_name:path}", methods=["GET"])
+    def catch_all(path_name: str):
+        # Don't intercept API calls
+        if path_name.startswith("api/"):
+            return {"detail": "Not Found"}
+            
+        file_path = os.path.join(frontend_dist, path_name)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+            
+        # SPA fallback
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
 
 def seed_platform_admin() -> None:
     db = MasterSessionLocal()

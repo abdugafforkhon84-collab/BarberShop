@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
-import { barbersApi, adminHistoryApi } from '../../api';
+import { useSearchParams } from 'react-router-dom';
+import { barbersApi, adminHistoryApi, servicesApi, settingsApi, adminBookingsApi } from '../../api';
 import { useToast } from '../../components/Toast';
 import ConfirmModal from '../../components/ConfirmModal';
 import CustomSelect from '../../components/CustomSelect';
@@ -21,11 +22,32 @@ import {
     Filter
 } from 'lucide-react';
 
+
+const EXTRA_SERVICES = [
+    { key: 'hair_wash', label: 'Мытье', emoji: '💧', priceKey: 'price_hair_wash' },
+    { key: 'beard', label: 'Борода', emoji: '🧔', priceKey: 'price_beard' },
+    { key: 'mask', label: 'Маска', emoji: '🎭', priceKey: 'price_mask' },
+    { key: 'patch', label: 'Патчи', emoji: '👁️', priceKey: 'price_patch' },
+    { key: 'scrub', label: 'Скраб', emoji: '💆', priceKey: 'price_scrub' },
+    { key: 'wax', label: 'Воск', emoji: '🕯️', priceKey: 'price_wax' },
+    { key: 'styling', label: 'Укладка', emoji: '✨', priceKey: 'price_styling' },
+];
+
 export default function AdminHistory() {
     const showToast = useToast();
     const [bookings, setBookings] = useState([]);
     const [barbers, setBarbers] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [services, setServices] = useState([]);
+    const [settings, setSettings] = useState({});
+    const [payModal, setPayModal] = useState(null);
+    const [selectedExtras, setSelectedExtras] = useState([]);
+    const [payMethod, setPayMethod] = useState('');
+    const [selectedServiceId, setSelectedServiceId] = useState('');
+    const [paying, setPaying] = useState(false);
+
 
     // Filters
     const [showFilters, setShowFilters] = useState(false);
@@ -45,12 +67,25 @@ export default function AdminHistory() {
     function loadData() {
         setLoading(true);
         Promise.all([
-            adminHistoryApi.list(), // fetch all completed & archived bookings
+            adminHistoryApi.list(),
             barbersApi.list(),
+            servicesApi.list(),
+            settingsApi.get(),
         ])
-            .then(([bRes, barRes]) => {
+            .then(([bRes, barRes, sRes, setRes]) => {
                 setBookings(bRes || []);
                 setBarbers(barRes || []);
+                setServices(sRes || []);
+                setSettings(setRes || {});
+                
+                const payId = searchParams.get('pay');
+                if (payId && (bRes || []).length > 0) {
+                    const found = bRes.find(b => String(b.id) === payId);
+                    if (found && found.status === 'done' && !found.is_paid) {
+                        openPayModal(found, sRes || []);
+                    }
+                    setSearchParams({}, { replace: true });
+                }
             })
             .catch((err) => showToast(err.response?.data?.detail || 'Ошибка загрузки данных', true))
             .finally(() => setLoading(false));
@@ -97,6 +132,62 @@ export default function AdminHistory() {
             .finally(() => setDeleteId(null));
     }
 
+
+    function openPayModal(booking, srvs) {
+        const s = srvs || services;
+        const existingId = booking.service_id ? String(booking.service_id) : '';
+        setSelectedServiceId(existingId || (s.length > 0 ? String(s[0].id) : ''));
+        setSelectedExtras(booking.extra_services || []);
+        setPayMethod(booking.payment_method || '');
+        setPayModal(booking);
+    }
+
+    function closePayModal() {
+        setPayModal(null);
+        setSelectedExtras([]);
+        setPayMethod('');
+        setSelectedServiceId('');
+    }
+
+    function toggleExtra(key) {
+        setSelectedExtras((prev) =>
+            prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+        );
+    }
+
+    function computeTotal() {
+        if (!payModal) return 0;
+        const service = services.find((s) => String(s.id) === String(selectedServiceId));
+        const base    = service?.price ?? payModal.price ?? 0;
+        const extras  = selectedExtras.reduce((sum, key) => {
+            const svc = EXTRA_SERVICES.find((s) => s.key === key);
+            return sum + (svc ? (settings[svc.priceKey] || 0) : 0);
+        }, 0);
+        return base + extras;
+    }
+
+    async function handlePay() {
+        if (!payMethod) { showToast('Выберите способ оплаты', true); return; }
+        if (!selectedServiceId && services.length > 0) { showToast('Выберите услугу', true); return; }
+        setPaying(true);
+        try {
+            await adminBookingsApi.update(payModal.id, {
+                service_id: selectedServiceId ? Number(selectedServiceId) : null,
+                extra_services: selectedExtras,
+                payment_method: payMethod,
+                is_paid: true,
+                total_paid: computeTotal()
+            });
+            showToast('Оплата сохранена ✓');
+            closePayModal();
+            loadData();
+        } catch (err) {
+            showToast(err.response?.data?.detail || 'Ошибка оплаты', true);
+        } finally {
+            setPaying(false);
+        }
+    }
+
     const hasFilters = search || selectedBarber || paidFilter || dateFrom || statusFilter !== 'done';
 
     return (
@@ -122,83 +213,69 @@ export default function AdminHistory() {
 
             {/* Filter Controls Panel */}
             {showFilters && (
-                <div className="card" style={{ padding: 16, marginBottom: 20, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-                    <div className="form-row" style={{ flexWrap: 'wrap', alignItems: 'flex-end', gap: 10 }}>
+                <div style={{ marginBottom: 20 }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                     
                     {/* Search */}
-                    <div className="form-group" style={{ marginBottom: 0, flex: 2, minWidth: 160 }}>
-                        <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, display: 'block', fontWeight: 500 }}>
-                            Поиск клиента / услуги
-                        </label>
-                        <div style={{ position: 'relative' }}>
-                            <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                            <input
-                                type="text"
-                                className="form-control"
-                                style={{ paddingLeft: 30, height: 36, fontSize: 13 }}
-                                placeholder="Имя, телефон..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
-                        </div>
+                    <div style={{ flex: 2, minWidth: 140, position: 'relative' }}>
+                        <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        <input
+                            type="text"
+                            className="form-control"
+                            style={{ paddingLeft: 28, height: 32, fontSize: 12, borderRadius: 'var(--radius-sm)' }}
+                            placeholder="Поиск..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
                     </div>
 
                     {/* Barber Select */}
-                    <div className="form-group" style={{ marginBottom: 0, flex: 1, minWidth: 120 }}>
-                        <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, display: 'block', fontWeight: 500 }}>
-                            Барбер
-                        </label>
+                    <div style={{ flex: 1, minWidth: 110 }}>
                         <CustomSelect 
                             value={selectedBarber}
                             onChange={(val) => setSelectedBarber(val)}
                             options={[
-                                { value: '', label: 'Все' },
+                                { value: '', label: 'Все барберы' },
                                 ...barbers.map(b => ({ value: b.id, label: b.full_name }))
                             ]}
+                            style={{ height: 32, fontSize: 12 }}
                         />
                     </div>
 
                     {/* Status Select */}
-                    <div className="form-group" style={{ marginBottom: 0, flex: 1, minWidth: 110 }}>
-                        <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, display: 'block', fontWeight: 500 }}>
-                            Статус
-                        </label>
+                    <div style={{ flex: 1, minWidth: 100 }}>
                         <CustomSelect 
                             value={statusFilter}
                             onChange={(val) => setStatusFilter(val)}
                             options={[
                                 { value: 'done', label: 'Выполнено' },
                                 { value: 'cancelled', label: 'Отменено' },
-                                { value: 'all', label: 'Все' }
+                                { value: 'all', label: 'Все статусы' }
                             ]}
+                            style={{ height: 32, fontSize: 12 }}
                         />
                     </div>
 
                     {/* Payment Select */}
-                    <div className="form-group" style={{ marginBottom: 0, flex: 1, minWidth: 110 }}>
-                        <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, display: 'block', fontWeight: 500 }}>
-                            Оплата
-                        </label>
+                    <div style={{ flex: 1, minWidth: 100 }}>
                         <CustomSelect 
                             value={paidFilter}
                             onChange={(val) => setPaidFilter(val)}
                             options={[
-                                { value: '', label: 'Все' },
+                                { value: '', label: 'Вся оплата' },
                                 { value: 'paid', label: 'Оплачено' },
                                 { value: 'unpaid', label: 'Долг' }
                             ]}
+                            style={{ height: 32, fontSize: 12 }}
                         />
                     </div>
 
                     {/* Date From */}
-                    <div className="form-group" style={{ marginBottom: 0, flex: 1, minWidth: 120 }}>
-                        <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, display: 'block', fontWeight: 500 }}>
-                            С даты
-                        </label>
+                    <div style={{ flex: 1, minWidth: 110 }}>
                         <input
                             type="date"
                             className="form-control"
-                            style={{ height: 36, fontSize: 13, padding: '0 8px' }}
+                            style={{ height: 32, fontSize: 12, padding: '0 8px', borderRadius: 'var(--radius-sm)' }}
                             value={dateFrom}
                             onChange={(e) => setDateFrom(e.target.value)}
                         />
@@ -209,17 +286,15 @@ export default function AdminHistory() {
                         <button
                             type="button"
                             className="btn btn-outline"
-                            style={{ height: 36, padding: '0 12px', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}
+                            style={{ height: 32, padding: '0 10px', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, borderRadius: 'var(--radius-sm)' }}
                             onClick={() => { setSearch(''); setSelectedBarber(''); setStatusFilter('done'); setPaidFilter(''); setDateFrom(''); }}
                         >
                             <RotateCcw size={12} />
-                            Сброс
                         </button>
                     )}
                 </div>
             </div>
             )}
-
             {/* Stat Cards */}
             <div className="grid grid-3" style={{ marginBottom: 20, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
                 <div className="card stat-card" style={{ padding: 18, display: 'flex', alignItems: 'center', gap: 14, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
@@ -291,7 +366,7 @@ export default function AdminHistory() {
                                     const extrasList = b.extra_services || b.extras || [];
 
                                     return (
-                                        <tr key={b.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                        <tr key={b.id} onClick={() => { if (b.status === 'done' && !b.is_paid) openPayModal(b); }} style={{ borderBottom: '1px solid var(--border)', cursor: (b.status === 'done' && !b.is_paid) ? 'pointer' : 'default' }}>
                                             <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                                                 <div style={{ fontWeight: 600, fontSize: 13 }}>{formatDate(b.date)}</div>
                                                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -346,15 +421,17 @@ export default function AdminHistory() {
                                                 )}
                                             </td>
                                             <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-icon"
-                                                    onClick={() => setDeleteId(b.id)}
-                                                    title="Удалить запись из истории"
-                                                    style={{ color: 'var(--status-cancelled)', padding: 6, borderRadius: 8, background: 'transparent', border: 'none' }}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                {b.status !== 'done' && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-icon"
+                                                        onClick={(e) => { e.stopPropagation(); setDeleteId(b.id); }}
+                                                        title="Удалить запись из истории"
+                                                        style={{ color: 'var(--status-cancelled)', padding: 6, borderRadius: 8, background: 'transparent', border: 'none' }}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     );
@@ -376,6 +453,135 @@ export default function AdminHistory() {
                     onCancel={() => setDeleteId(null)}
                 />
             )}
+
+            {/* Pay Modal */}
+            {payModal && (
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closePayModal()}>
+                    <div className="modal-box" style={{ maxWidth: 440 }}>
+                        <div className="modal-header" style={{ marginBottom: 20 }}>
+                            <div>
+                                <h2 style={{ fontSize: 18 }}>Оплата ({payModal.client_name})</h2>
+                                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+                                    Выберите услугу, допы и способ оплаты
+                                </div>
+                            </div>
+                            <button className="modal-close" onClick={closePayModal}><XCircle size={20} /></button>
+                        </div>
+
+                        {/* Services List */}
+                        <div style={{ marginBottom: 20 }}>
+                            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Основная услуга
+                            </label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+                                {services.map((s) => (
+                                    <div
+                                        key={s.id}
+                                        onClick={() => setSelectedServiceId(String(s.id))}
+                                        style={{
+                                            padding: '12px 16px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                            border: selectedServiceId === String(s.id) ? '1.5px solid var(--green)' : '1.5px solid var(--border)',
+                                            background: selectedServiceId === String(s.id) ? 'rgba(51,209,122,0.08)' : 'var(--bg-card)',
+                                        }}
+                                    >
+                                        <div style={{ fontWeight: 600, color: selectedServiceId === String(s.id) ? 'var(--green)' : 'var(--text-main)' }}>
+                                            {s.name}
+                                        </div>
+                                        <div style={{ fontWeight: 700, fontSize: 14 }}>{formatMoney(s.price)}</div>
+                                    </div>
+                                ))}
+                                {services.length === 0 && (
+                                    <div style={{ fontSize: 13, color: 'var(--text-muted)', padding: 12, background: 'var(--bg-card)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                                        Услуги не настроены. <br/> Добавьте услуги в разделе Настройки.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Extras Grid */}
+                        <div style={{ marginBottom: 20 }}>
+                            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Дополнительно
+                            </label>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 8 }}>
+                                {EXTRA_SERVICES.map((s) => {
+                                    const active = selectedExtras.includes(s.key);
+                                    const price = settings[s.priceKey] || 0;
+                                    return (
+                                        <div
+                                            key={s.key}
+                                            onClick={() => toggleExtra(s.key)}
+                                            style={{
+                                                padding: '10px 8px', borderRadius: 'var(--radius-md)', cursor: 'pointer', textAlign: 'center',
+                                                border: active ? '1.5px solid var(--green)' : '1.5px solid var(--border)',
+                                                background: active ? 'rgba(51,209,122,0.08)' : 'var(--bg-card)',
+                                                userSelect: 'none', transition: 'all 0.1s'
+                                            }}
+                                        >
+                                            <div style={{ fontSize: 20, marginBottom: 4 }}>{s.emoji}</div>
+                                            <div style={{ fontSize: 11, fontWeight: 600, color: active ? 'var(--green)' : 'var(--text-main)' }}>
+                                                {s.label}
+                                            </div>
+                                            {price > 0 && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>+{price}₸</div>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Total Display */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--bg-card)', borderRadius: 'var(--radius-md)', marginBottom: 20, border: '1px solid var(--border)' }}>
+                            <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>К оплате</div>
+                            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--green)' }}>
+                                {formatMoney(computeTotal())}
+                            </div>
+                        </div>
+
+                        {/* Payment Methods */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                            <button
+                                type="button"
+                                className="btn"
+                                onClick={() => setPayMethod('cash')}
+                                style={{
+                                    height: 48, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                    border: payMethod === 'cash' ? '1.5px solid var(--green)' : '1.5px solid var(--border)',
+                                    background: payMethod === 'cash' ? 'rgba(51,209,122,0.1)' : 'var(--bg-card)',
+                                    color: payMethod === 'cash' ? 'var(--green)' : 'var(--text-main)'
+                                }}
+                            >
+                                <Wallet size={18} /> Наличные
+                            </button>
+                            <button
+                                type="button"
+                                className="btn"
+                                onClick={() => setPayMethod('kaspi')}
+                                style={{
+                                    height: 48, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                    border: payMethod === 'kaspi' ? '1.5px solid var(--green)' : '1.5px solid var(--border)',
+                                    background: payMethod === 'kaspi' ? 'rgba(51,209,122,0.1)' : 'var(--bg-card)',
+                                    color: payMethod === 'kaspi' ? 'var(--green)' : 'var(--text-main)'
+                                }}
+                            >
+                                <CreditCard size={18} /> Kaspi
+                            </button>
+                        </div>
+
+                        {/* Submit */}
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={handlePay}
+                            disabled={paying || !payMethod || (!selectedServiceId && services.length > 0)}
+                            style={{ width: '100%', height: 48, fontSize: 15, marginTop: 16 }}
+                        >
+                            {paying ? 'Сохранение...' : 'Подтвердить оплату ✓'}
+                        </button>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }

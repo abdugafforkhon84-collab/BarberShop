@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: barberpro
+    env: docker
+    region: frankfurt
+    plan: free # Change to starter/standard for production
+    envVars:
+      - key: SUPERADMIN_LOGIN
+        value: superadmin
+      - key: SUPERADMIN_PASSWORD
+        value: super123
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PORT
+        value: 8000
+    healthCheckPath: /api/health

@@ -217,30 +217,28 @@ export default function AdminReports() {
                     </div>
 
                     {/* Date Picker Form */}
-                    <form onSubmit={handleFilter} style={{ display: 'grid', gap: 10, marginTop: 10 }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>С</label>
-                                <input
-                                    type="date"
-                                    className="form-control"
-                                    style={{ height: 38, padding: '0 8px', fontSize: 13 }}
-                                    value={dateFrom}
-                                    onChange={(e) => setDateFrom(e.target.value)}
-                                />
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>По</label>
-                                <input
-                                    type="date"
-                                    className="form-control"
-                                    style={{ height: 38, padding: '0 8px', fontSize: 13 }}
-                                    value={dateTo}
-                                    onChange={(e) => setDateTo(e.target.value)}
-                                />
-                            </div>
+                    <form onSubmit={handleFilter} style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>С</label>
+                            <input
+                                type="date"
+                                className="form-control"
+                                style={{ height: 32, padding: '0 8px', fontSize: 12, width: 130, borderRadius: 'var(--radius-sm)' }}
+                                value={dateFrom}
+                                onChange={(e) => setDateFrom(e.target.value)}
+                            />
                         </div>
-                        <button type="submit" className="btn btn-primary" style={{ height: 38, fontSize: 13 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>По</label>
+                            <input
+                                type="date"
+                                className="form-control"
+                                style={{ height: 32, padding: '0 8px', fontSize: 12, width: 130, borderRadius: 'var(--radius-sm)' }}
+                                value={dateTo}
+                                onChange={(e) => setDateTo(e.target.value)}
+                            />
+                        </div>
+                        <button type="submit" className="btn btn-primary" style={{ height: 32, fontSize: 12, padding: '0 12px', borderRadius: 'var(--radius-sm)' }}>
                             Применить
                         </button>
                     </form>
