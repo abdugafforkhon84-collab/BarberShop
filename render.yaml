@@ -1,9 +1,12 @@
 services:
   - type: web
-    name: barberpro
-    env: docker
+    name: barberpro-api
+    env: python
     region: frankfurt
     plan: free # Change to starter/standard for production
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /api/health
     envVars:
       - key: SUPERADMIN_LOGIN
         value: superadmin
@@ -11,6 +14,23 @@ services:
         value: super123
       - key: SECRET_KEY
         generateValue: true
-      - key: PORT
-        value: 8000
-    healthCheckPath: /api/health
+      - key: CORS_ORIGINS
+        value: "*"
+        
+  - type: web
+    name: barberpro-frontend
+    env: static
+    region: frankfurt
+    plan: free
+    buildCommand: "cd frontend && npm install && npm run build"
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: barberpro-api
+          envVarKey: RENDER_EXTERNAL_URL
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
