@@ -17,11 +17,8 @@ services:
       - key: CORS_ORIGINS
         value: "*"
         
-  - type: web
+  - type: static_site
     name: barberpro-frontend
-    env: static
-    region: frankfurt
-    plan: free
     buildCommand: "cd frontend && npm install && npm run build"
     staticPublishPath: frontend/dist
     envVars:
