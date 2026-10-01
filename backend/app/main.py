@@ -60,6 +60,10 @@ app.include_router(services.router)
 app.include_router(settings_router.router)
 
 
+@app.get("/")
+def read_root():
+    return {"message": "BarberPro API is running. Please visit the frontend URL."}
+
 @app.get("/api/health")
 def health_check():
     return {"status": "ok", "service": "BarberPro API"}
