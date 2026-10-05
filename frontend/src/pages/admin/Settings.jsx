@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 export default function AdminSettings() {
     const showToast = useToast();
     const navigate = useNavigate();
-    const { logout, fullName } = useAuth();
+    const { logout, fullName, role, shopName } = useAuth();
     const [form, setForm] = useState(null);
     const [saving, setSaving] = useState(false);
 
@@ -18,7 +18,8 @@ export default function AdminSettings() {
     }
 
     function setTheme(theme) {
-        localStorage.setItem('barberpro_theme', theme);
+        const themeKey = `barberpro_theme_${role}_${shopName || 'master'}`;
+        localStorage.setItem(themeKey, theme);
         document.documentElement.setAttribute('data-theme', theme);
     }
 

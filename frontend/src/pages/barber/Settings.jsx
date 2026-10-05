@@ -4,7 +4,7 @@ import { History, Scissors, LogOut, Palette } from 'lucide-react';
 
 export default function BarberSettings() {
     const navigate = useNavigate();
-    const { logout, fullName } = useAuth();
+    const { logout, fullName, role, shopName } = useAuth();
 
     function handleLogout() {
         logout();
@@ -12,7 +12,8 @@ export default function BarberSettings() {
     }
 
     function setTheme(theme) {
-        localStorage.setItem('barberpro_theme', theme);
+        const themeKey = `barberpro_theme_${role}_${shopName || 'master'}`;
+        localStorage.setItem(themeKey, theme);
         document.documentElement.setAttribute('data-theme', theme);
     }
 

@@ -43,12 +43,13 @@ const HOME_BY_ROLE = {
 };
 
 export default function App() {
-    const { isAuthenticated, role } = useAuth();
+    const { isAuthenticated, role, shopName } = useAuth();
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem('barberpro_theme') || 'dark';
+        const themeKey = isAuthenticated ? `barberpro_theme_${role}_${shopName || 'master'}` : 'barberpro_theme';
+        const savedTheme = localStorage.getItem(themeKey) || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
-    }, []);
+    }, [isAuthenticated, role, shopName]);
 
     return (
         <Routes>
