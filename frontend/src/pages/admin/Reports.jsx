@@ -3,7 +3,7 @@ import { Bar } from 'react-chartjs-2';
 import {
     BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Tooltip,
 } from 'chart.js';
-import { adminReportsApi } from '../../api';
+import { adminReportsApi, barbersApi } from '../../api';
 import { formatMoney } from '../../utils';
 import { 
     BarChart3, 
@@ -51,15 +51,31 @@ export default function AdminReports() {
     const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
+    const [barbers, setBarbers] = useState([]);
+    const [selectedBarber, setSelectedBarber] = useState('');
 
-    useEffect(() => { load(); }, []);
+    useEffect(() => { 
+        load(); 
+        loadBarbers();
+    }, []);
+
+    async function loadBarbers() {
+        try {
+            const list = await barbersApi.list();
+            setBarbers(list);
+        } catch (err) {
+            console.error('Failed to load barbers:', err);
+        }
+    }
 
     async function load(overrideFrom, overrideTo) {
         setLoading(true);
         try {
             const from = overrideFrom !== undefined ? overrideFrom : dateFrom;
             const to = overrideTo !== undefined ? overrideTo : dateTo;
-            const data = await adminReportsApi.summary({ date_from: from, date_to: to });
+            const params = { date_from: from, date_to: to };
+            if (selectedBarber) params.barber_id = selectedBarber;
+            const data = await adminReportsApi.summary(params);
             setSummary(data);
         } catch (err) {
             console.error('Error loading report:', err);
@@ -238,6 +254,18 @@ export default function AdminReports() {
                                 onChange={(e) => setDateTo(e.target.value)}
                             />
                         </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Барбер</label>
+                            <select
+                                className="form-control"
+                                style={{ height: 32, padding: '0 8px', fontSize: 12, borderRadius: 'var(--radius-sm)' }}
+                                value={selectedBarber}
+                                onChange={(e) => setSelectedBarber(e.target.value)}
+                            >
+                                <option value="">Все барберы</option>
+                                {barbers.map(b => <option key={b.id} value={b.id}>{b.full_name}</option>)}
+                            </select>
+                        </div>
                         <button type="submit" className="btn btn-primary" style={{ height: 32, fontSize: 12, padding: '0 12px', borderRadius: 'var(--radius-sm)' }}>
                             Применить
                         </button>
@@ -344,6 +372,24 @@ export default function AdminReports() {
                             )}
                         </div>
                     </div>
+
+                    {/* Services Breakdown */}
+                    {summary.service_counts && Object.keys(summary.service_counts).length > 0 && (
+                        <div className="card" style={{ padding: 20, marginBottom: 20, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <Scissors size={18} color="var(--green)" />
+                                Выполненные услуги
+                            </h3>
+                            <div className="grid grid-2" style={{ gap: 10 }}>
+                                {Object.entries(summary.service_counts).sort((a,b) => b[1] - a[1]).map(([name, count]) => (
+                                    <div key={name} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg-panel)', borderRadius: 8 }}>
+                                        <span style={{ fontWeight: 600, fontSize: 14 }}>{name}</span>
+                                        <span style={{ fontWeight: 700, color: 'var(--green)' }}>{count} шт</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Daily Revenue Table Breakdown */}
                     {sortedDailyData.length > 0 && (

@@ -21,7 +21,7 @@ import os
 import re
 import threading
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from . import models  # tenant schema (Base.metadata target)
@@ -71,6 +71,19 @@ def get_tenant_engine(slug: str):
             connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
             engine = create_engine(url, connect_args=connect_args)
             TenantBase.metadata.create_all(bind=engine)
+            
+            # Auto-migrate new columns for existing SQLite databases
+            if url.startswith("sqlite"):
+                with engine.begin() as conn:
+                    try:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN salary_type VARCHAR(20) DEFAULT 'percent'"))
+                    except Exception:
+                        pass
+                    try:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN salary_amount FLOAT DEFAULT 50.0"))
+                    except Exception:
+                        pass
+
             _engines[slug] = engine
     return _engines[slug]
 

@@ -36,6 +36,8 @@ class UserOut(BaseModel):
     phone: Optional[str] = None
     role: RoleEnum
     is_active: bool
+    salary_type: str = "percent"
+    salary_amount: float = 50.0
     barber_percent: float = 50.0
     created_at: datetime
 
@@ -131,6 +133,8 @@ class BarberCreate(BaseModel):
     password: str = Field(min_length=4, max_length=100)
     full_name: str
     phone: Optional[str] = None
+    salary_type: str = "percent"
+    salary_amount: float = Field(default=50.0, ge=0)
     barber_percent: float = Field(default=50.0, ge=0, le=100)
 
 
@@ -139,6 +143,8 @@ class BarberUpdate(BaseModel):
     phone: Optional[str] = None
     is_active: Optional[bool] = None
     password: Optional[str] = Field(default=None, min_length=4, max_length=100)
+    salary_type: Optional[str] = None
+    salary_amount: Optional[float] = Field(default=None, ge=0)
     barber_percent: Optional[float] = Field(default=None, ge=0, le=100)
 
 
@@ -336,6 +342,7 @@ class AdminReportSummary(BaseModel):
     top_service: Optional[str] = None
     top_barber: Optional[str] = None
     daily_revenue: dict[str, float]
+    service_counts: dict[str, int] = Field(default_factory=dict)
 
 
 class BarberReportSummary(BaseModel):

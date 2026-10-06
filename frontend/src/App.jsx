@@ -18,6 +18,7 @@ import Login from './pages/Login';
 import SuperadminLayout from './pages/superadmin/SuperadminLayout';
 import SuperadminDashboard from './pages/superadmin/Dashboard';
 import SuperadminTenants from './pages/superadmin/Tenants';
+import SuperadminTariffs from './pages/superadmin/Tariffs';
 
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminBookings from './pages/admin/Bookings';
@@ -66,6 +67,7 @@ export default function App() {
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<SuperadminDashboard />} />
                 <Route path="tenants" element={<SuperadminTenants />} />
+                <Route path="tariffs" element={<SuperadminTariffs />} />
             </Route>
 
             <Route

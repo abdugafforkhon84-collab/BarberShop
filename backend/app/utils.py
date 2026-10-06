@@ -97,12 +97,11 @@ def booking_to_out(b: models.Booking) -> schemas.BookingOut:
     )
 
 
-def build_admin_summary(db: Session, date_from: date, date_to: date) -> schemas.AdminReportSummary:
-    bookings = (
-        db.query(models.Booking)
-        .filter(models.Booking.date >= date_from, models.Booking.date <= date_to)
-        .all()
-    )
+def build_admin_summary(db: Session, date_from: date, date_to: date, barber_id: Optional[int] = None) -> schemas.AdminReportSummary:
+    query = db.query(models.Booking).filter(models.Booking.date >= date_from, models.Booking.date <= date_to)
+    if barber_id:
+        query = query.filter(models.Booking.barber_id == barber_id)
+    bookings = query.all()
 
     revenue = 0.0
     done_count = cancelled_count = pending_count = 0
@@ -140,6 +139,7 @@ def build_admin_summary(db: Session, date_from: date, date_to: date) -> schemas.
         top_service=top_service,
         top_barber=top_barber,
         daily_revenue=dict(daily_revenue),
+        service_counts=dict(service_counts),
     )
 
 

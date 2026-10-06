@@ -58,7 +58,10 @@ class User(Base):
     phone = Column(String(30), nullable=True)
     role = Column(Enum(RoleEnum), nullable=False, default=RoleEnum.barber)
     is_active = Column(Boolean, default=True, nullable=False)
-    # Barber's commission percentage (e.g. 50 means 50% of booking price)
+    # Barber's payment method (percent, daily, fixed)
+    salary_type = Column(String(20), nullable=False, default="percent")
+    salary_amount = Column(Float, nullable=False, default=50.0)
+    # Legacy field (kept for compatibility)
     barber_percent = Column(Float, nullable=False, default=50.0)
     created_at = Column(DateTime, default=datetime.utcnow)
 

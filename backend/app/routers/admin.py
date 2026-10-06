@@ -67,6 +67,8 @@ def create_barber(
         phone=payload.phone,
         role=models.RoleEnum.barber,
         is_active=True,
+        salary_type=payload.salary_type if hasattr(payload, 'salary_type') else "percent",
+        salary_amount=payload.salary_amount if hasattr(payload, 'salary_amount') else 50.0,
         barber_percent=payload.barber_percent if hasattr(payload, 'barber_percent') else 50.0,
     )
     db.add(barber)
@@ -181,11 +183,12 @@ def delete_booking(booking_id: int, db: Session = Depends(get_tenant_db)):
 def reports_summary(
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
+    barber_id: Optional[int] = None,
     db: Session = Depends(get_tenant_db),
 ):
     date_to = date_to or date.today()
     date_from = date_from or (date_to - timedelta(days=30))
-    return build_admin_summary(db, date_from, date_to)
+    return build_admin_summary(db, date_from, date_to, barber_id)
 
 
 # ============================================================ Payments ("выплаты")

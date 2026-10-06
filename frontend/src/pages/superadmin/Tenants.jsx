@@ -6,6 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import { superadminApi } from '../../api';
 import { useToast } from '../../components/Toast';
 import { formatDate, formatMoney } from '../../utils';
+import ConfirmModal from '../../components/ConfirmModal';
 
 // Fix leaflet default marker icon path issue in Vite
 delete L.Icon.Default.prototype._getIconUrl;
@@ -66,6 +67,7 @@ export default function SuperadminTenants() {
     const [renewMonths, setRenewMonths] = useState(3);
     const [form, setForm] = useState(emptyForm);
     const [copiedId, setCopiedId] = useState(null);
+    const [confirmConfig, setConfirmConfig] = useState(null);
 
     // Tariff Prices Settings Modal
     const [tariffModalOpen, setTariffModalOpen] = useState(false);
@@ -159,11 +161,22 @@ export default function SuperadminTenants() {
         showToast('Пароль обновлён');
     }
 
-    async function remove(t) {
-        if (!confirm(`Полностью удалить барбершоп «${t.shop_name}»?\n\nЭто необратимо удалит всю его базу данных.`)) return;
-        await superadminApi.remove(t.id);
-        showToast('Барбершоп удалён');
-        load();
+    function remove(t) {
+        setConfirmConfig({
+            title: 'Удаление барбершопа',
+            text: `Полностью удалить барбершоп «${t.shop_name}»?\nЭто необратимо удалит всю его базу данных.`,
+            danger: true,
+            confirmText: 'Удалить',
+            action: async () => {
+                try {
+                    await superadminApi.remove(t.id);
+                    showToast('Барбершоп удалён');
+                    load();
+                } catch (err) {
+                    showToast('Ошибка удаления', true);
+                }
+            }
+        });
     }
 
     function copyCreds(t) {
@@ -546,6 +559,34 @@ export default function SuperadminTenants() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {confirmConfig && (
+                <ConfirmModal
+                    title={confirmConfig.title}
+                    text={confirmConfig.text}
+                    danger={confirmConfig.danger}
+                    confirmText={confirmConfig.confirmText}
+                    onConfirm={() => {
+                        confirmConfig.action();
+                        setConfirmConfig(null);
+                    }}
+                    onCancel={() => setConfirmConfig(null)}
+                />
+            )}
+
+            {confirmConfig && (
+                <ConfirmModal
+                    title={confirmConfig.title}
+                    text={confirmConfig.text}
+                    danger={confirmConfig.danger}
+                    confirmText={confirmConfig.confirmText}
+                    onConfirm={() => {
+                        confirmConfig.action();
+                        setConfirmConfig(null);
+                    }}
+                    onCancel={() => setConfirmConfig(null)}
+                />
             )}
         </div>
     );

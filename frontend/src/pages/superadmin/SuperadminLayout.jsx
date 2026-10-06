@@ -8,7 +8,7 @@
  * ------------------------------------------------------------
  */
 import { Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Store, LogOut } from 'lucide-react';
+import { LayoutDashboard, Store, LogOut, Coins } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { useAuth } from '../../context/AuthContext';
 
@@ -23,6 +23,7 @@ export default function SuperadminLayout() {
 
     const NAV_ITEMS = [
         { to: '/superadmin/tenants', icon: <Store size={18} />, label: 'Барбершопы' },
+        { to: '/superadmin/tariffs', icon: <Coins size={18} />, label: 'Тарифы' },
         { to: '/superadmin/dashboard', icon: <LayoutDashboard size={18} />, label: 'Отчёт' },
         { onClick: handleLogout, icon: <LogOut size={18} />, label: 'Выйти' }
     ];
