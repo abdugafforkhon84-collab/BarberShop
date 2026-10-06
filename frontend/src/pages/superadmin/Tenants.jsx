@@ -26,6 +26,7 @@ const emptyForm = {
     lat: null,
     lng: null,
     plan_months: 1, // Default to 1-month trial
+    custom_price: '',
 };
 
 function randomPassword() {
@@ -65,6 +66,7 @@ export default function SuperadminTenants() {
     const [modalOpen, setModalOpen] = useState(false);
     const [renewModal, setRenewModal] = useState(null); // tenant to renew
     const [renewMonths, setRenewMonths] = useState(3);
+    const [renewCustomPrice, setRenewCustomPrice] = useState('');
     const [form, setForm] = useState(emptyForm);
     const [copiedId, setCopiedId] = useState(null);
     const [confirmConfig, setConfirmConfig] = useState(null);
@@ -119,7 +121,8 @@ export default function SuperadminTenants() {
         try {
             await superadminApi.create({
                 ...form,
-                plan_months: form.plan_months || undefined,
+                plan_months: form.plan_months ? Number(form.plan_months) : undefined,
+                custom_price: form.custom_price === '' ? null : Number(form.custom_price),
             });
             showToast('Барбершоп успешно добавлен');
             closeModal();
@@ -189,7 +192,10 @@ export default function SuperadminTenants() {
     async function handleRenew() {
         if (!renewModal) return;
         try {
-            await superadminApi.renew(renewModal.id, { plan_months: renewMonths });
+            await superadminApi.renew(renewModal.id, { 
+                plan_months: Number(renewMonths), 
+                custom_price: renewCustomPrice === '' ? null : Number(renewCustomPrice) 
+            });
             showToast('Тариф продлён ✓');
             setRenewModal(null);
             load();
@@ -203,7 +209,7 @@ export default function SuperadminTenants() {
         if (months === 3) return formatMoney(tariffPrices.price_3_months);
         if (months === 6) return formatMoney(tariffPrices.price_6_months);
         if (months === 12) return formatMoney(tariffPrices.price_12_months);
-        return '—';
+        return '— (Укажите свою цену)';
     }
 
     const DEFAULT_CENTER = [43.238949, 76.889709]; // Almaty
@@ -472,26 +478,17 @@ export default function SuperadminTenants() {
                             </div>
 
                             {/* Subscription plan */}
-                            <div className="form-group">
-                                <label>Тарифный план подписки</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                                    {[1, 3, 6, 12].map((m) => (
-                                        <div
-                                            key={m}
-                                            onClick={() => setForm({ ...form, plan_months: m })}
-                                            style={{
-                                                padding: '10px 6px',
-                                                borderRadius: 10,
-                                                textAlign: 'center',
-                                                cursor: 'pointer',
-                                                border: form.plan_months === m ? '2px solid var(--green)' : '1px solid var(--border)',
-                                                background: form.plan_months === m ? 'rgba(51, 209, 122, 0.1)' : 'var(--bg-panel)',
-                                            }}
-                                        >
-                                            <div style={{ fontWeight: 700, fontSize: 14 }}>{m} {m === 1 ? 'мес (🎁)' : 'мес'}</div>
-                                            <div style={{ fontSize: 11, color: 'var(--green)', marginTop: 2 }}>{getTariffPriceDisplay(m)}</div>
-                                        </div>
-                                    ))}
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Срок подписки (мес)</label>
+                                    <input type="number" className="form-control" value={form.plan_months} onChange={(e) => setForm({ ...form, plan_months: e.target.value })} min="1" required />
+                                </div>
+                                <div className="form-group">
+                                    <label>Своя цена (₸) — опционально</label>
+                                    <input type="number" className="form-control" value={form.custom_price} onChange={(e) => setForm({ ...form, custom_price: e.target.value })} min="0" placeholder="По умолчанию из тарифов" />
+                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                                        Оставьте пустым, чтобы использовать стандартную цену за {form.plan_months || 0} мес: {getTariffPriceDisplay(Number(form.plan_months))}
+                                    </div>
                                 </div>
                             </div>
 
@@ -521,33 +518,27 @@ export default function SuperadminTenants() {
                             )}
                         </div>
 
-                        <div className="form-group">
-                            <label>Выберите срок продления</label>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 8 }}>
-                                {[1, 3, 6, 12].map((m) => (
-                                    <div
-                                        key={m}
-                                        onClick={() => setRenewMonths(m)}
-                                        style={{
-                                            padding: '10px 6px',
-                                            borderRadius: 10,
-                                            textAlign: 'center',
-                                            cursor: 'pointer',
-                                            border: renewMonths === m ? '2px solid var(--green)' : '1px solid var(--border)',
-                                            background: renewMonths === m ? 'rgba(51, 209, 122, 0.1)' : 'var(--bg-panel)',
-                                        }}
-                                    >
-                                        <div style={{ fontWeight: 700, fontSize: 14 }}>{m} {m === 1 ? 'мес (🎁)' : 'мес'}</div>
-                                        <div style={{ fontSize: 11, color: 'var(--green)', marginTop: 2 }}>{getTariffPriceDisplay(m)}</div>
-                                    </div>
-                                ))}
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Срок продления (мес)</label>
+                                <input type="number" className="form-control" value={renewMonths} onChange={(e) => setRenewMonths(e.target.value)} min="1" required />
+                            </div>
+                            <div className="form-group">
+                                <label>Своя цена (₸) — опционально</label>
+                                <input type="number" className="form-control" value={renewCustomPrice} onChange={(e) => setRenewCustomPrice(e.target.value)} min="0" placeholder="По умолчанию" />
                             </div>
                         </div>
 
                         <div style={{ background: 'var(--bg-panel)', padding: 12, borderRadius: 8, fontSize: 13, marginBottom: 16, border: '1px solid var(--border)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <span>Стоимость продления:</span>
-                                <strong style={{ color: 'var(--green)' }}>{getTariffPriceDisplay(renewMonths)}</strong>
+                                <span>Стоимость по тарифу ({renewMonths} мес):</span>
+                                <strong style={{ color: 'var(--text-muted)' }}>{getTariffPriceDisplay(Number(renewMonths))}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span>Итого к оплате:</span>
+                                <strong style={{ color: 'var(--green)', fontSize: 15 }}>
+                                    {renewCustomPrice !== '' ? formatMoney(Number(renewCustomPrice)) : getTariffPriceDisplay(Number(renewMonths))}
+                                </strong>
                             </div>
                         </div>
 
@@ -555,7 +546,7 @@ export default function SuperadminTenants() {
                             <button className="btn btn-primary" onClick={handleRenew}>
                                 <RefreshCw size={16} /> Продлить на {renewMonths} мес
                             </button>
-                            <button className="btn btn-outline" onClick={() => setRenewModal(null)}>Отмена</button>
+                            <button className="btn btn-outline" onClick={() => { setRenewModal(null); setRenewCustomPrice(''); }}>Отмена</button>
                         </div>
                     </div>
                 </div>
