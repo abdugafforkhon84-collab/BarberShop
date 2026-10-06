@@ -358,7 +358,6 @@ export default function SuperadminTenants() {
                                     value={tariffPrices.price_1_month}
                                     onChange={(e) => setTariffPrices({ ...tariffPrices, price_1_month: Number(e.target.value) })}
                                     min="0"
-                                    placeholder="0 для бесплатного пробного месяца"
                                 />
                                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
                                     Укажите 0 ₸ чтобы предоставить 1 месяц как бесплатный пробный тариф
@@ -421,25 +420,25 @@ export default function SuperadminTenants() {
                             {/* Shop name */}
                             <div className="form-group">
                                 <label>Название барбершопа *</label>
-                                <input className="form-control" value={form.shop_name} onChange={(e) => setForm({ ...form, shop_name: e.target.value })} required placeholder="Например: Salon Almaty" />
+                                <input className="form-control" value={form.shop_name} onChange={(e) => setForm({ ...form, shop_name: e.target.value })} required />
                             </div>
 
                             {/* Owner info */}
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>ФИО владельца</label>
-                                    <input className="form-control" value={form.owner_name} onChange={(e) => setForm({ ...form, owner_name: e.target.value })} placeholder="Иванов Иван Иванович" />
+                                    <input className="form-control" value={form.owner_name} onChange={(e) => setForm({ ...form, owner_name: e.target.value })} />
                                 </div>
                                 <div className="form-group">
                                     <label>Телефон</label>
-                                    <input className="form-control" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+7 777 000 00 00" />
+                                    <input className="form-control" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
                                 </div>
                             </div>
 
                             {/* Address */}
                             <div className="form-group">
                                 <label>Адрес</label>
-                                <input className="form-control" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="ул. Абая 1, Алматы" />
+                                <input className="form-control" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
                             </div>
 
                             {/* Map */}
@@ -467,7 +466,7 @@ export default function SuperadminTenants() {
                             {/* Admin credentials */}
                             <div className="form-group">
                                 <label>Логин администратора *</label>
-                                <input className="form-control" value={form.admin_login} onChange={(e) => setForm({ ...form, admin_login: e.target.value })} required minLength={3} placeholder="Например: almaty_admin" />
+                                <input className="form-control" value={form.admin_login} onChange={(e) => setForm({ ...form, admin_login: e.target.value })} required minLength={3} />
                             </div>
                             <div className="form-group">
                                 <label>Пароль администратора *</label>
@@ -485,7 +484,7 @@ export default function SuperadminTenants() {
                                 </div>
                                 <div className="form-group">
                                     <label>Своя цена (₸) — опционально</label>
-                                    <input type="number" className="form-control" value={form.custom_price} onChange={(e) => setForm({ ...form, custom_price: e.target.value })} min="0" placeholder="По умолчанию из тарифов" />
+                                    <input type="number" className="form-control" value={form.custom_price} onChange={(e) => setForm({ ...form, custom_price: e.target.value })} min="0" />
                                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
                                         Оставьте пустым, чтобы использовать стандартную цену за {form.plan_months || 0} мес: {getTariffPriceDisplay(Number(form.plan_months))}
                                     </div>
@@ -525,7 +524,7 @@ export default function SuperadminTenants() {
                             </div>
                             <div className="form-group">
                                 <label>Своя цена (₸) — опционально</label>
-                                <input type="number" className="form-control" value={renewCustomPrice} onChange={(e) => setRenewCustomPrice(e.target.value)} min="0" placeholder="По умолчанию" />
+                                <input type="number" className="form-control" value={renewCustomPrice} onChange={(e) => setRenewCustomPrice(e.target.value)} min="0" />
                             </div>
                         </div>
 

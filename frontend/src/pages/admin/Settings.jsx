@@ -222,7 +222,6 @@ export default function AdminSettings() {
                             <label className="field-label">Телефон</label>
                             <input
                                 className="input"
-                                placeholder="+7 (700) 000-00-00"
                                 value={form.phone || ''}
                                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                             />
@@ -231,7 +230,6 @@ export default function AdminSettings() {
                             <label className="field-label">Адрес</label>
                             <input
                                 className="input"
-                                placeholder="ул. Абая, 10"
                                 value={form.address || ''}
                                 onChange={(e) => setForm({ ...form, address: e.target.value })}
                             />

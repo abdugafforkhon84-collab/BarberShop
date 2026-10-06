@@ -246,7 +246,6 @@ export default function AdminBookings() {
                                             if (match) setForm({ ...form, client_name: val, client_phone: match.phone || form.client_phone });
                                             else setForm({ ...form, client_name: val });
                                         }}
-                                        placeholder="Алмат"
                                         required
                                         autoFocus
                                     />
@@ -257,7 +256,6 @@ export default function AdminBookings() {
                                         className="form-control"
                                         value={form.client_phone}
                                         onChange={(e) => setForm({ ...form, client_phone: e.target.value })}
-                                        placeholder="+7 777 000 00 00"
                                         required
                                     />
                                 </div>

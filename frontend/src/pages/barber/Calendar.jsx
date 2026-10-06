@@ -272,7 +272,6 @@ export default function BarberCalendar() {
                                         <input
                                             className="form-control"
                                             style={{ paddingLeft: 36 }}
-                                            placeholder="Поиск по имени или телефону..."
                                             value={search}
                                             onChange={(e) => setSearch(e.target.value)}
                                             autoFocus
@@ -344,7 +343,6 @@ export default function BarberCalendar() {
                                             className="form-control"
                                             value={newName}
                                             onChange={(e) => setNewName(e.target.value)}
-                                            placeholder="Например: Алмат"
                                             autoFocus
                                             required
                                         />
@@ -355,7 +353,6 @@ export default function BarberCalendar() {
                                             className="form-control"
                                             value={newPhone}
                                             onChange={(e) => setNewPhone(e.target.value)}
-                                            placeholder="+7 777 000 00 00"
                                             type="tel"
                                             required
                                         />
