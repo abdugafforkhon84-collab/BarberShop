@@ -46,8 +46,24 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), master_db: Session =
     if tenant and verify_password(password, tenant.admin_password_hash):
         if not tenant.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Этот барбершоп отключён администратором платформы")
+        
+        theme = "dark"
+        shop_type = "barbershop"
+        tenant_db = open_tenant_session(tenant.slug)
+        try:
+            settings = tenant_db.query(models.Settings).first()
+            if settings:
+                theme = settings.theme
+                shop_type = settings.shop_type
+        finally:
+            tenant_db.close()
+
         token = create_access_token({"sub": str(tenant.id), "role": "admin", "tenant": tenant.slug})
-        return schemas.Token(access_token=token, role="admin", tenant=tenant.slug, shop_name=tenant.shop_name, full_name=tenant.shop_name)
+        return schemas.Token(
+            access_token=token, role="admin", tenant=tenant.slug, 
+            shop_name=tenant.shop_name, full_name=tenant.shop_name,
+            theme=theme, shop_type=shop_type
+        )
 
     # 3) A barber? -> look up which shop via the routing index, then check
     #    the password inside THAT shop's own database.
@@ -63,11 +79,18 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), master_db: Session =
             if barber and verify_password(password, barber.password_hash):
                 if not barber.is_active:
                     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Учётная запись отключена")
+                
+                settings = tenant_db.query(models.Settings).first()
+                theme = settings.theme if settings else "dark"
+                shop_type = settings.shop_type if settings else "barbershop"
+
                 token = create_access_token({"sub": str(barber.id), "role": "barber", "tenant": index_entry.tenant_slug})
                 return schemas.Token(
                     access_token=token, role="barber", tenant=index_entry.tenant_slug,
                     shop_name=owning_tenant.shop_name if owning_tenant else None,
                     full_name=barber.full_name,
+                    theme=theme,
+                    shop_type=shop_type
                 )
         finally:
             tenant_db.close()

@@ -14,15 +14,16 @@ import { useToast } from '../../components/Toast';
 import { formatDate } from '../../utils';
 import ConfirmModal from '../../components/ConfirmModal';
 
-const emptyForm = { login: '', password: '', full_name: '', phone: '', barber_percent: 50 };
+const emptyForm = { login: '', password: '', full_name: '', phone: '', salary_type: 'percent', salary_amount: 50, barber_percent: 50 };
 
 export default function AdminBarbers() {
     const showToast = useToast();
     const [barbers, setBarbers]       = useState([]);
     const [loading, setLoading]       = useState(true);
     const [createOpen, setCreateOpen] = useState(false);
-    const [editBarber, setEditBarber] = useState(null); // { id, full_name, barber_percent }
-    const [editPercent, setEditPercent] = useState(50);
+    const [editBarber, setEditBarber] = useState(null);
+    const [editSalaryType, setEditSalaryType] = useState('percent');
+    const [editSalaryAmount, setEditSalaryAmount] = useState(50);
     const [form, setForm]             = useState(emptyForm);
     const [confirmConfig, setConfirmConfig] = useState(null);
 
@@ -56,17 +57,22 @@ export default function AdminBarbers() {
         }
     }
 
-    // ── Edit percent ──
-    function openEditPercent(b) {
+    // ── Edit salary ──
+    function openEditSalary(b) {
         setEditBarber(b);
-        setEditPercent(b.barber_percent ?? 50);
+        setEditSalaryType(b.salary_type || 'percent');
+        setEditSalaryAmount(b.salary_amount ?? b.barber_percent ?? 50);
     }
 
-    async function handleSavePercent(e) {
+    async function handleSaveSalary(e) {
         e.preventDefault();
         try {
-            await barbersApi.update(editBarber.id, { barber_percent: Number(editPercent) });
-            showToast('Процент обновлён');
+            await barbersApi.update(editBarber.id, { 
+                salary_type: editSalaryType, 
+                salary_amount: Number(editSalaryAmount), 
+                barber_percent: Number(editSalaryAmount) 
+            });
+            showToast('Зарплата обновлена');
             setEditBarber(null);
             load();
         } catch (err) {
@@ -137,18 +143,20 @@ export default function AdminBarbers() {
                         {b.phone && <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}><Phone size={12} /> {b.phone}</div>}
 
                         {/* Percent badge — clickable */}
-                        <div
+                            <div
                             style={{
                                 display: 'inline-flex', alignItems: 'center', gap: 6,
                                 background: 'rgba(51,209,122,0.1)', border: '1px solid var(--green)',
                                 borderRadius: 999, padding: '4px 12px', marginBottom: 14,
                                 cursor: 'pointer', transition: 'background 0.18s',
                             }}
-                            onClick={() => openEditPercent(b)}
-                            title="Нажмите чтобы изменить процент"
+                            onClick={() => openEditSalary(b)}
+                            title="Нажмите чтобы изменить зарплату"
                         >
                             <Percent size={13} style={{ color: 'var(--green)' }} />
-                            <span style={{ color: 'var(--green)', fontWeight: 700, fontSize: 14 }}>{b.barber_percent ?? 50}%</span>
+                            <span style={{ color: 'var(--green)', fontWeight: 700, fontSize: 14 }}>
+                                {b.salary_type === 'fixed' ? 'Оклад' : b.salary_type === 'daily' ? 'Ставка/день' : 'Процент'}: {b.salary_amount ?? b.barber_percent ?? 50}{b.salary_type === 'percent' ? '%' : '₸'}
+                            </span>
                             <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>изменить</span>
                         </div>
 
@@ -189,11 +197,21 @@ export default function AdminBarbers() {
                                 <input type="password" className="form-control" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={4} />
                             </div>
                             <div className="form-group">
-                                <label>Процент от приёма (%)</label>
-                                <input type="number" className="form-control" value={form.barber_percent} onChange={(e) => setForm({ ...form, barber_percent: Number(e.target.value) })} min="0" max="100" step="1" required />
-                                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                                    Например: 50 означает, что барбер получает 50% от стоимости каждого заказа
-                                </div>
+                                <label>Способ выплаты</label>
+                                <select className="form-control" value={form.salary_type} onChange={(e) => setForm({ ...form, salary_type: e.target.value })}>
+                                    <option value="percent">Процент от услуг (%)</option>
+                                    <option value="fixed">Оклад (фиксированная сумма в месяц)</option>
+                                    <option value="daily">Дневная ставка (за смену)</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>{form.salary_type === 'percent' ? 'Процент от приёма (%)' : 'Сумма (₸)'}</label>
+                                <input type="number" className="form-control" value={form.salary_amount} onChange={(e) => setForm({ ...form, salary_amount: Number(e.target.value), barber_percent: Number(e.target.value) })} min="0" step="1" required />
+                                {form.salary_type === 'percent' && (
+                                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                                        Например: 50 означает, что барбер получает 50% от стоимости каждого заказа
+                                    </div>
+                                )}
                             </div>
                             <div className="modal-actions">
                                 <button type="submit" className="btn btn-primary">Добавить</button>
@@ -204,31 +222,41 @@ export default function AdminBarbers() {
                 </div>
             )}
 
-            {/* ── Edit percent modal ── */}
+            {/* ── Edit salary modal ── */}
             {editBarber && (
                 <div className="modal-overlay">
                     <div className="modal-box" style={{ maxWidth: 340 }}>
                         <div className="modal-header">
-                            <h2>Изменить %</h2>
+                            <h2>Зарплата</h2>
                             <button className="modal-close" onClick={() => setEditBarber(null)}><X size={20} /></button>
                         </div>
                         <div style={{ marginBottom: 16, fontWeight: 600 }}>{editBarber.full_name}</div>
-                        <form onSubmit={handleSavePercent}>
+                        <form onSubmit={handleSaveSalary}>
                             <div className="form-group">
-                                <label>Процент от приёма (%)</label>
+                                <label>Способ выплаты</label>
+                                <select className="form-control" value={editSalaryType} onChange={(e) => setEditSalaryType(e.target.value)}>
+                                    <option value="percent">Процент от услуг (%)</option>
+                                    <option value="fixed">Оклад (фиксированная сумма в месяц)</option>
+                                    <option value="daily">Дневная ставка (за смену)</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>{editSalaryType === 'percent' ? 'Процент (%)' : 'Сумма (₸)'}</label>
                                 <input
                                     type="number"
                                     className="form-control"
-                                    value={editPercent}
-                                    onChange={(e) => setEditPercent(e.target.value)}
-                                    min="0" max="100" step="1"
+                                    value={editSalaryAmount}
+                                    onChange={(e) => setEditSalaryAmount(e.target.value)}
+                                    min="0" step="1"
                                     autoFocus
                                     required
                                 />
                             </div>
-                            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-                                При заказе на 10 000 ₸ → барбер получит {Math.round(10000 * editPercent / 100)} ₸
-                            </div>
+                            {editSalaryType === 'percent' && (
+                                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+                                    При заказе на 10 000 ₸ → барбер получит {Math.round(10000 * editSalaryAmount / 100)} ₸
+                                </div>
+                            )}
                             <div className="modal-actions">
                                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Сохранить</button>
                                 <button type="button" className="btn btn-outline" onClick={() => setEditBarber(null)}>Отмена</button>

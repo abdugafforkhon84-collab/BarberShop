@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 export default function AdminSettings() {
     const showToast = useToast();
     const navigate = useNavigate();
-    const { logout, fullName, role, shopName } = useAuth();
+    const { logout, fullName, role, shopName, setShopTheme, setShopType } = useAuth();
     const [form, setForm] = useState(null);
     const [saving, setSaving] = useState(false);
 
@@ -17,11 +17,7 @@ export default function AdminSettings() {
         navigate('/login');
     }
 
-    function setTheme(theme) {
-        const themeKey = `barberpro_theme_${role}_${shopName || 'master'}`;
-        localStorage.setItem(themeKey, theme);
-        document.documentElement.setAttribute('data-theme', theme);
-    }
+
 
     useEffect(() => {
         settingsApi.get().then(setForm).catch((err) => {
@@ -35,6 +31,14 @@ export default function AdminSettings() {
         try {
             const updated = await settingsApi.update(form);
             setForm(updated);
+            if (updated.theme) {
+                setShopTheme(updated.theme);
+                localStorage.setItem('barberpro_theme', updated.theme);
+            }
+            if (updated.shop_type) {
+                setShopType(updated.shop_type);
+                localStorage.setItem('barberpro_shop_type', updated.shop_type);
+            }
             showToast('Настройки вашего барбершопа сохранены');
         } catch (err) {
             showToast(err.response?.data?.detail || 'Ошибка сохранения', true);
@@ -73,12 +77,12 @@ export default function AdminSettings() {
                 <button className="service-check-item" onClick={() => navigate('/admin/barbers')}>
                     <div className="sci-left">
                         <Users size={20} color="var(--green)" />
-                        <span className="sci-name">Сотрудники (Барберы)</span>
+                        <span className="sci-name">Сотрудники ({shopType === 'salon' ? 'Специалисты' : 'Барберы'})</span>
                     </div>
                 </button>
                 <button className="service-check-item" onClick={() => navigate('/admin/services')}>
                     <div className="sci-left">
-                        <Scissors size={20} color="var(--green)" />
+                        {shopType === 'salon' ? <Sparkles size={20} color="var(--green)" /> : <Scissors size={20} color="var(--green)" />}
                         <span className="sci-name">Услуги и Цены</span>
                     </div>
                 </button>
@@ -135,7 +139,7 @@ export default function AdminSettings() {
                     </div>
                     {form.is_trial && (
                         <span className="badge" style={{ background: 'rgba(255, 193, 7, 0.15)', color: '#ffc107', border: '1px solid rgba(255, 193, 7, 0.3)', fontSize: 11, fontWeight: 700 }}>
-                            🎁 Пробный период
+                            Пробный период
                         </span>
                     )}
                 </div>
@@ -149,7 +153,7 @@ export default function AdminSettings() {
                             <div>
                                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Текущий тариф</div>
                                 <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, color: 'var(--green)' }}>
-                                    {form.plan_months === 1 ? '🎁 Пробный 1 месяц' : form.plan_months ? `${form.plan_months} мес` : 'Без тарифа'}
+                                    {form.plan_months === 1 ? 'Пробный 1 месяц' : form.plan_months ? `${form.plan_months} мес` : 'Без тарифа'}
                                 </div>
                                 {form.plan_start && (
                                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -243,6 +247,50 @@ export default function AdminSettings() {
                     >
                         <Save size={16} />
                         {saving ? 'Сохранение...' : 'Сохранить изменения'}
+                    </button>
+                </form>
+
+                {/* Visual Settings */}
+                <form onSubmit={handleSave} className="card" style={{ marginBottom: 16, padding: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+                        <Palette size={18} color="var(--accent)" />
+                        <span>Внешний вид и тип заведения</span>
+                    </div>
+
+                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <div className="form-group">
+                            <label className="field-label">Тип заведения</label>
+                            <select
+                                className="input"
+                                value={form.shop_type || 'barbershop'}
+                                onChange={(e) => setForm({ ...form, shop_type: e.target.value })}
+                            >
+                                <option value="barbershop">Барбершоп (стрижки, бороды)</option>
+                                <option value="salon">Салон красоты (ногти, волосы, макияж)</option>
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label className="field-label">Цветовая тема</label>
+                            <select
+                                className="input"
+                                value={form.theme || 'dark'}
+                                onChange={(e) => setForm({ ...form, theme: e.target.value })}
+                            >
+                                <option value="dark">Тёмная (Dark)</option>
+                                <option value="light">Светлая (Light)</option>
+                                <option value="green">Зелёная (Green)</option>
+                                <option value="blue">Синяя (Blue)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={saving}
+                        style={{ marginTop: 16, height: 42, padding: '0 24px', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                    >
+                        <Save size={16} />
+                        {saving ? 'Сохранение...' : 'Применить изменения'}
                     </button>
                 </form>
 

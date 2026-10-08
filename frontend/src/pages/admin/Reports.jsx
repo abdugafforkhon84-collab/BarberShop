@@ -19,6 +19,7 @@ import {
     Filter,
     CalendarDays
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -53,6 +54,7 @@ export default function AdminReports() {
     const [showFilters, setShowFilters] = useState(false);
     const [barbers, setBarbers] = useState([]);
     const [selectedBarber, setSelectedBarber] = useState('');
+    const { shopType } = useAuth();
 
     useEffect(() => { 
         load(); 
@@ -377,7 +379,7 @@ export default function AdminReports() {
                     {summary.service_counts && Object.keys(summary.service_counts).length > 0 && (
                         <div className="card" style={{ padding: 20, marginBottom: 20, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
                             <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <Scissors size={18} color="var(--green)" />
+                                {shopType === 'salon' ? <Sparkles size={18} color="var(--green)" /> : <Scissors size={18} color="var(--green)" />}
                                 Выполненные услуги
                             </h3>
                             <div className="grid grid-2" style={{ gap: 10 }}>

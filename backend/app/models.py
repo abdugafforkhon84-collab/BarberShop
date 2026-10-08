@@ -148,7 +148,14 @@ class Settings(Base):
     phone = Column(String(30), nullable=True)
     address = Column(String(255), nullable=True)
 
-    # Extra service prices (used by barber payment screen)
+    # UI Theme & Terminology
+    theme = Column(String(20), nullable=False, default="dark")  # dark, light, green, blue
+    shop_type = Column(String(20), nullable=False, default="barbershop")  # barbershop, salon
+
+    # Extra service prices
     price_hair_wash = Column(Float, nullable=False, default=500.0)
     price_beard = Column(Float, nullable=False, default=1000.0)
     price_mask = Column(Float, nullable=False, default=800.0)
+
+    # Dynamic extra services JSON list: [{"id": "...", "name": "...", "price": 1000, "duration": 0}]
+    extra_services_json = Column(Text, nullable=False, default="[]")

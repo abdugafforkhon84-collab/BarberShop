@@ -83,6 +83,18 @@ def get_tenant_engine(slug: str):
                         conn.execute(text("ALTER TABLE users ADD COLUMN salary_amount FLOAT DEFAULT 50.0"))
                     except Exception:
                         pass
+                    try:
+                        conn.execute(text("ALTER TABLE settings ADD COLUMN theme VARCHAR(20) DEFAULT 'dark'"))
+                    except Exception:
+                        pass
+                    try:
+                        conn.execute(text("ALTER TABLE settings ADD COLUMN shop_type VARCHAR(20) DEFAULT 'barbershop'"))
+                    except Exception:
+                        pass
+                    try:
+                        conn.execute(text("ALTER TABLE settings ADD COLUMN extra_services_json TEXT DEFAULT '[]'"))
+                    except Exception:
+                        pass
 
             _engines[slug] = engine
     return _engines[slug]

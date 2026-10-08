@@ -44,13 +44,12 @@ const HOME_BY_ROLE = {
 };
 
 export default function App() {
-    const { isAuthenticated, role, shopName } = useAuth();
+    const { isAuthenticated, shopTheme } = useAuth();
 
     useEffect(() => {
-        const themeKey = isAuthenticated ? `barberpro_theme_${role}_${shopName || 'master'}` : 'barberpro_theme';
-        const savedTheme = localStorage.getItem(themeKey) || 'dark';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-    }, [isAuthenticated, role, shopName]);
+        const activeTheme = shopTheme || 'dark';
+        document.documentElement.setAttribute('data-theme', activeTheme);
+    }, [isAuthenticated, shopTheme]);
 
     return (
         <Routes>

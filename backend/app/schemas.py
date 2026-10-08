@@ -26,6 +26,8 @@ class Token(BaseModel):
     tenant: Optional[str] = None  # barbershop slug, absent for superadmin
     shop_name: Optional[str] = None
     full_name: str
+    theme: Optional[str] = "dark"
+    shop_type: Optional[str] = "barbershop"
 
 
 class UserOut(BaseModel):
@@ -309,6 +311,9 @@ class SettingsUpdate(BaseModel):
     price_hair_wash: Optional[float] = None
     price_beard: Optional[float] = None
     price_mask: Optional[float] = None
+    theme: Optional[str] = None
+    shop_type: Optional[str] = None
+    extra_services_json: Optional[str] = None
 
 
 class SettingsOut(BaseModel):
@@ -323,6 +328,9 @@ class SettingsOut(BaseModel):
     price_hair_wash: float = 500.0
     price_beard: float = 1000.0
     price_mask: float = 800.0
+    theme: str = "dark"
+    shop_type: str = "barbershop"
+    extra_services_json: str = "[]"
     plan_months: Optional[int] = None
     plan_start: Optional[dt_date] = None
     plan_end: Optional[dt_date] = None

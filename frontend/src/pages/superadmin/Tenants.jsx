@@ -289,7 +289,7 @@ export default function SuperadminTenants() {
                                         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>Тариф:</span>
                                     </div>
                                     <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>
-                                        {t.plan_months === 1 ? '🎁 Пробный 1 мес' : t.plan_months ? `${t.plan_months} мес` : 'Без тарифа'}
+                                        {t.plan_months === 1 ? 'Пробный 1 мес' : t.plan_months ? `${t.plan_months} мес` : 'Без тарифа'}
                                     </span>
                                 </div>
 
@@ -351,7 +351,7 @@ export default function SuperadminTenants() {
 
                         <form onSubmit={handleSaveTariffs}>
                             <div className="form-group">
-                                <label>1 месяц (Пробный период 🎁)</label>
+                                <label>1 месяц (Пробный период)</label>
                                 <input
                                     type="number"
                                     className="form-control"
