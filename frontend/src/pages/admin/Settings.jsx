@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 export default function AdminSettings() {
     const showToast = useToast();
     const navigate = useNavigate();
-    const { logout, fullName, role, shopName, setShopTheme, setShopType } = useAuth();
+    const { logout, fullName, role, shopName, shopType, setShopTheme, setShopType } = useAuth();
     const [form, setForm] = useState(null);
     const [saving, setSaving] = useState(false);
 
