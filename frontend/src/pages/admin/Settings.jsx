@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
-import { settingsApi } from '../../api';
+import { settingsApi, adminBranchesApi } from '../../api';
 import { useToast } from '../../components/Toast';
-import { Building2, ShieldCheck, Coins, Palette, Users, Wallet, Scissors, History, LogOut, User, Save, Clock, Phone, MapPin, Sparkles } from 'lucide-react';
+import { Building2, ShieldCheck, Coins, Palette, Users, Wallet, Scissors, History, LogOut, User, Save, Clock, Phone, MapPin, Sparkles, Map } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AdminSettings() {
     const showToast = useToast();
     const navigate = useNavigate();
-    const { logout, fullName, role, shopName, shopType, setShopTheme, setShopType } = useAuth();
+    const { logout, fullName, role, shopName, shopType, setShopTheme, setShopType, switchBranch } = useAuth();
     const [form, setForm] = useState(null);
     const [saving, setSaving] = useState(false);
+    const [branches, setBranches] = useState([]);
 
     function handleLogout() {
         logout();
@@ -23,7 +24,17 @@ export default function AdminSettings() {
         settingsApi.get().then(setForm).catch((err) => {
             showToast(err.response?.data?.detail || 'Ошибка загрузки настроек', true);
         });
+        adminBranchesApi.list().then(setBranches).catch(console.error);
     }, []);
+
+    const handleSwitchBranch = async (slug) => {
+        try {
+            await switchBranch(slug);
+            window.location.reload();
+        } catch (err) {
+            showToast(err.response?.data?.detail || 'Ошибка при переключении филиала', true);
+        }
+    }
 
     async function handleSave(e) {
         e.preventDefault();
@@ -99,6 +110,36 @@ export default function AdminSettings() {
                     </div>
                 </button>
             </div>
+
+            {/* Branches (Филиалы) */}
+            {branches && branches.length > 1 && (
+                <div className="card" style={{ marginBottom: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15, marginBottom: 14 }}>
+                        <Map size={18} color="var(--green)" />
+                        <span>Ваши филиалы (точки)</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {branches.map(b => (
+                            <button 
+                                key={b.slug}
+                                onClick={() => !b.is_current && handleSwitchBranch(b.slug)}
+                                style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '12px 16px', borderRadius: 'var(--radius-sm)',
+                                    background: b.is_current ? 'var(--green-glow)' : 'var(--bg-panel)',
+                                    border: `1px solid ${b.is_current ? 'var(--green)' : 'var(--border)'}`,
+                                    color: b.is_current ? 'var(--green)' : 'var(--text-main)',
+                                    textAlign: 'left', cursor: b.is_current ? 'default' : 'pointer',
+                                    transition: 'var(--transition)'
+                                }}
+                            >
+                                <span style={{ fontWeight: b.is_current ? 600 : 500 }}>{b.shop_name}</span>
+                                {b.is_current && <span style={{ fontSize: 12 }}>Текущий</span>}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Themes */}
             <div className="card" style={{ marginBottom: 24 }}>

@@ -18,6 +18,7 @@ export const authApi = {    login: (login, password) => {
         }).then((r) => r.data);
     },
     me: () => client.get('/auth/me').then((r) => r.data),
+    switchBranch: (target_slug) => client.post('/auth/switch-branch', { target_slug }).then(r => r.data),
 };
 
 // ---------------------------------------------------------------- Services
@@ -34,6 +35,10 @@ export const barbersApi = {
     create: (data) => client.post('/admin/barbers', data).then((r) => r.data),
     update: (id, data) => client.put(`/admin/barbers/${id}`, data).then((r) => r.data),
     remove: (id) => client.delete(`/admin/barbers/${id}`).then((r) => r.data),
+};
+
+export const adminBranchesApi = {
+    list: () => client.get('/admin/branches').then(r => r.data),
 };
 
 // ---------------------------------------------------------------- Admin: bookings

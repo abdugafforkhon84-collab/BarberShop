@@ -68,6 +68,8 @@ class Tenant(MasterBase):
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    parent_id = Column(Integer, nullable=True)
+
 
 class PlatformTariffSettings(MasterBase):
     """Tariff prices managed by the Superadmin."""

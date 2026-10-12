@@ -51,32 +51,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router)
-app.include_router(superadmin.router)
-app.include_router(admin.router)
-app.include_router(barber.router)
-app.include_router(clients.router)
-app.include_router(services.router)
-app.include_router(settings_router.router)
+import os
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
+# Include routers both directly and under /api for development & production compatibility
+api_routers = [auth, superadmin, admin, barber, clients, services, settings_router]
+for r in api_routers:
+    app.include_router(r.router)
+    app.include_router(r.router, prefix="/api")
+
+frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
 
 @app.get("/")
 def read_root():
+    if os.path.isdir(frontend_dist):
+        index_file = os.path.join(frontend_dist, "index.html")
+        if os.path.isfile(index_file):
+            return FileResponse(index_file)
     return {"message": "BarberPro API is running. Please visit the frontend URL."}
 
 @app.get("/api/health")
 def health_check():
     return {"status": "ok", "service": "BarberPro API"}
 
-# Serve frontend statically in production
-import os
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-
-frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
-
 if os.path.isdir(frontend_dist):
-    # Serve assets directly
     assets_dir = os.path.join(frontend_dist, "assets")
     if os.path.isdir(assets_dir):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")

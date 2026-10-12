@@ -27,6 +27,7 @@ const emptyForm = {
     lng: null,
     plan_months: 1, // Default to 1-month trial
     custom_price: '',
+    parent_id: null,
 };
 
 function randomPassword() {
@@ -320,6 +321,12 @@ export default function SuperadminTenants() {
                             </div>
 
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                {!t.parent_id && (
+                                    <button className="btn btn-sm btn-outline" style={{ color: 'var(--green)', borderColor: 'var(--green)' }} onClick={() => {
+                                        setForm({...emptyForm, parent_id: t.id});
+                                        setModalOpen(true);
+                                    }}><Plus size={14} /> Филиал</button>
+                                )}
                                 <button className="btn btn-sm btn-outline" onClick={() => resetPassword(t)}><KeyRound size={14} /> Пароль</button>
                                 <button className="btn btn-sm btn-outline" onClick={() => toggleActive(t)}><Power size={14} /> {t.is_active ? 'Отключить' : 'Включить'}</button>
                                 <button className="btn btn-sm btn-warning" onClick={() => { setRenewMonths(3); setRenewModal(t); }}>
@@ -413,13 +420,13 @@ export default function SuperadminTenants() {
                 <div className="modal-overlay">
                     <div className="modal-box" style={{ maxWidth: 520 }}>
                         <div className="modal-header">
-                            <h2>Новый барбершоп</h2>
+                            <h2>{form.parent_id ? "Новый филиал" : "Новый барбершоп"}</h2>
                             <button className="modal-close" onClick={closeModal}><X size={20} /></button>
                         </div>
                         <form onSubmit={handleSave}>
                             {/* Shop name */}
                             <div className="form-group">
-                                <label>Название барбершопа *</label>
+                                <label>{form.parent_id ? "Название филиала *" : "Название барбершопа *"}</label>
                                 <input className="form-control" value={form.shop_name} onChange={(e) => setForm({ ...form, shop_name: e.target.value })} required />
                             </div>
 
@@ -464,17 +471,21 @@ export default function SuperadminTenants() {
                             </div>
 
                             {/* Admin credentials */}
-                            <div className="form-group">
-                                <label>Логин администратора *</label>
-                                <input className="form-control" value={form.admin_login} onChange={(e) => setForm({ ...form, admin_login: e.target.value })} required minLength={3} />
-                            </div>
-                            <div className="form-group">
-                                <label>Пароль администратора *</label>
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                    <input className="form-control" value={form.admin_password} onChange={(e) => setForm({ ...form, admin_password: e.target.value })} required minLength={4} />
-                                    <button type="button" className="btn btn-outline btn-sm" onClick={() => setForm({ ...form, admin_password: randomPassword() })}>Сгенерировать</button>
-                                </div>
-                            </div>
+                            {!form.parent_id && (
+                                <>
+                                    <div className="form-group">
+                                        <label>Логин администратора *</label>
+                                        <input className="form-control" value={form.admin_login} onChange={(e) => setForm({ ...form, admin_login: e.target.value })} required minLength={3} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Пароль администратора *</label>
+                                        <div style={{ display: 'flex', gap: 8 }}>
+                                            <input className="form-control" value={form.admin_password} onChange={(e) => setForm({ ...form, admin_password: e.target.value })} required minLength={4} />
+                                            <button type="button" className="btn btn-outline btn-sm" onClick={() => setForm({ ...form, admin_password: randomPassword() })}>Сгенерировать</button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
 
                             {/* Subscription plan */}
                             <div className="form-row">
@@ -492,7 +503,7 @@ export default function SuperadminTenants() {
                             </div>
 
                             <div className="modal-actions" style={{ marginTop: 20 }}>
-                                <button type="submit" className="btn btn-primary">Создать барбершоп</button>
+                                <button type="submit" className="btn btn-primary">{form.parent_id ? "Создать филиал" : "Создать барбершоп"}</button>
                                 <button type="button" className="btn btn-outline" onClick={closeModal}>Отмена</button>
                             </div>
                         </form>

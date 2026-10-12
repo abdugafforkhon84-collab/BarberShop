@@ -57,8 +57,9 @@ class MeOut(BaseModel):
 # ---------------------------------------------------------------- Superadmin: tenants & tariff pricing
 class TenantCreate(BaseModel):
     shop_name: str = Field(min_length=2, max_length=150)
-    admin_login: str = Field(min_length=3, max_length=100)
-    admin_password: str = Field(min_length=4, max_length=100)
+    admin_login: Optional[str] = Field(default=None, min_length=3, max_length=100)
+    admin_password: Optional[str] = Field(default=None, min_length=4, max_length=100)
+    parent_id: Optional[int] = None
     owner_name: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
@@ -109,6 +110,8 @@ class TenantOut(BaseModel):
     is_trial: bool = False
     is_active: bool
     created_at: datetime
+    parent_id: Optional[int] = None
+    branches: Optional[List[dict]] = None
 
 
 class TariffSettingsOut(BaseModel):

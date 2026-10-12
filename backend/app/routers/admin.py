@@ -42,6 +42,25 @@ from ..utils import booking_to_out, build_admin_summary, create_booking_record
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_tenant_admin)])
 
 
+# ============================================================ Branches
+@router.get("/branches")
+def get_admin_branches(
+    token_payload: dict = Depends(get_token_payload),
+    master_db: Session = Depends(get_master_db)
+):
+    current_slug = token_payload.get("tenant")
+    current_tenant = master_db.query(Tenant).filter(Tenant.slug == current_slug).first()
+    if not current_tenant:
+        return []
+
+    parent_id = current_tenant.parent_id or current_tenant.id
+    family = master_db.query(Tenant).filter(
+        (Tenant.id == parent_id) | (Tenant.parent_id == parent_id)
+    ).all()
+
+    return [{"slug": t.slug, "shop_name": t.shop_name, "is_current": t.slug == current_slug} for t in family]
+
+
 # ============================================================ Barbers
 @router.get("/barbers", response_model=list[schemas.BarberOut])
 def list_barbers(db: Session = Depends(get_tenant_db)):

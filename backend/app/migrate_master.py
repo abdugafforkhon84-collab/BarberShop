@@ -19,6 +19,7 @@ def migrate_master_db():
         tenant_cols = [
             ("subscription_price", "REAL DEFAULT 0.0"),
             ("is_trial", "INTEGER DEFAULT 0"),
+            ("parent_id", "INTEGER DEFAULT NULL"),
         ]
 
         for col, col_def in tenant_cols:

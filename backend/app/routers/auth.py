@@ -18,6 +18,7 @@ in the app trusts that claim to pick the right database.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
@@ -96,6 +97,48 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), master_db: Session =
             tenant_db.close()
 
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный логин или пароль")
+
+
+class SwitchBranchRequest(BaseModel):
+    target_slug: str
+
+@router.post("/switch-branch", response_model=schemas.Token)
+def switch_branch(req: SwitchBranchRequest, payload: dict = Depends(get_token_payload), master_db: Session = Depends(get_master_db)):
+    if payload.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Только администратор может переключать филиалы")
+    
+    current_slug = payload.get("tenant")
+    current_tenant = master_db.query(Tenant).filter(Tenant.slug == current_slug).first()
+    if not current_tenant:
+        raise HTTPException(status_code=404, detail="Текущий филиал не найден")
+
+    target_tenant = master_db.query(Tenant).filter(Tenant.slug == req.target_slug).first()
+    if not target_tenant:
+        raise HTTPException(status_code=404, detail="Целевой филиал не найден")
+
+    parent_id = current_tenant.parent_id or current_tenant.id
+    target_parent_id = target_tenant.parent_id or target_tenant.id
+
+    if parent_id != target_parent_id:
+        raise HTTPException(status_code=403, detail="Нет доступа к этому филиалу")
+
+    theme = "dark"
+    shop_type = "barbershop"
+    tenant_db = open_tenant_session(target_tenant.slug)
+    try:
+        settings = tenant_db.query(models.Settings).first()
+        if settings:
+            theme = settings.theme
+            shop_type = settings.shop_type
+    finally:
+        tenant_db.close()
+
+    token = create_access_token({"sub": str(target_tenant.id), "role": "admin", "tenant": target_tenant.slug})
+    return schemas.Token(
+        access_token=token, role="admin", tenant=target_tenant.slug, 
+        shop_name=target_tenant.shop_name, full_name=target_tenant.shop_name,
+        theme=theme, shop_type=shop_type
+    )
 
 
 @router.get("/me", response_model=schemas.MeOut)

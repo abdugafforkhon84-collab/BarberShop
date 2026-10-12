@@ -55,6 +55,26 @@ export function AuthProvider({ children }) {
         setShopType(null);
     }, []);
 
+    const switchBranch = useCallback(async (slug) => {
+        const data = await authApi.switchBranch(slug);
+        localStorage.setItem('barberpro_token', data.access_token);
+        localStorage.setItem('barberpro_role', data.role);
+        localStorage.setItem('barberpro_name', data.full_name);
+        if (data.shop_name) localStorage.setItem('barberpro_shop', data.shop_name);
+        else localStorage.removeItem('barberpro_shop');
+        
+        if (data.theme) localStorage.setItem('barberpro_theme', data.theme);
+        if (data.shop_type) localStorage.setItem('barberpro_shop_type', data.shop_type);
+
+        setToken(data.access_token);
+        setRole(data.role);
+        setFullName(data.full_name);
+        setShopName(data.shop_name || null);
+        setShopTheme(data.theme || 'dark');
+        setShopType(data.shop_type || 'barbershop');
+        return data;
+    }, []);
+
     const value = {
         token,
         role,
@@ -70,6 +90,7 @@ export function AuthProvider({ children }) {
         isBarber: role === 'barber',
         login,
         logout,
+        switchBranch,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

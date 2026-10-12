@@ -112,15 +112,25 @@ def list_tenants(db: Session = Depends(get_master_db)):
 
 @router.post("/tenants", response_model=schemas.TenantOut)
 def create_tenant(payload: schemas.TenantCreate, db: Session = Depends(get_master_db)):
-    if db.query(Tenant).filter(Tenant.admin_login == payload.admin_login).first():
-        raise HTTPException(status_code=400, detail="Такой логин администратора уже занят")
-    if db.query(LoginIndex).filter(LoginIndex.login == payload.admin_login).first():
-        raise HTTPException(status_code=400, detail="Такой логин уже используется в системе")
-
     base_slug = slugify(payload.shop_name)
     if not is_valid_slug(base_slug):
         base_slug = "shop"
     slug = _unique_slug(db, base_slug)
+
+    if payload.parent_id:
+        parent = db.query(Tenant).filter(Tenant.id == payload.parent_id).first()
+        if not parent:
+            raise HTTPException(status_code=400, detail="Родительский филиал не найден")
+        
+        payload.admin_login = f"{parent.admin_login}_branch_{slug}"
+        payload.admin_password = "dummy_password"
+    else:
+        if not payload.admin_login or not payload.admin_password:
+            raise HTTPException(status_code=400, detail="Для основной точки логин и пароль обязательны")
+        if db.query(Tenant).filter(Tenant.admin_login == payload.admin_login).first():
+            raise HTTPException(status_code=400, detail="Такой логин администратора уже занят")
+        if db.query(LoginIndex).filter(LoginIndex.login == payload.admin_login).first():
+            raise HTTPException(status_code=400, detail="Такой логин уже используется в системе")
 
     # Compute plan_end and tariff price if plan provided
     tariff_settings = _get_or_create_tariff_settings(db)
@@ -148,6 +158,7 @@ def create_tenant(payload: schemas.TenantCreate, db: Session = Depends(get_maste
         subscription_price=sub_price,
         is_trial=is_trial,
         is_active=True,
+        parent_id=payload.parent_id,
     )
     db.add(tenant)
     db.add(LoginIndex(login=payload.admin_login, tenant_slug=slug, role="admin"))
