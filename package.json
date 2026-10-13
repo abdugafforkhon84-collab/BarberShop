@@ -1,0 +1,10 @@
+{
+  "name": "barbershop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BarberPro platform",
+  "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "start": "npx serve -s frontend/dist -l $PORT"
+  }
+}
