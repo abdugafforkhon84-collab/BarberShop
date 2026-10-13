@@ -4,7 +4,10 @@
   "private": true,
   "description": "BarberPro platform",
   "scripts": {
-    "build": "npm --prefix frontend install && npm --prefix frontend run build",
-    "start": "npx serve -s frontend/dist -l $PORT"
+    "build": "cd frontend && npm install && npm run build",
+    "start": "npx --yes serve -s frontend/dist -l $PORT"
+  },
+  "dependencies": {
+    "serve": "^14.2.4"
   }
 }
