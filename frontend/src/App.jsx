@@ -44,7 +44,7 @@ const HOME_BY_ROLE = {
 };
 
 export default function App() {
-    const { isAuthenticated, shopTheme } = useAuth();
+    const { isAuthenticated, role, shopTheme } = useAuth();
 
     useEffect(() => {
         const activeTheme = shopTheme || 'dark';
