@@ -211,21 +211,26 @@ export default function AdminBookings() {
             )}
 
             {modalOpen && (
-                <div className="modal-overlay">
-                    <div className="modal-box" style={{ maxWidth: 420 }}>
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closeModal()}>
+                    <div className="modal-box" style={{ maxWidth: 440 }}>
                         <div className="modal-header">
                             <div>
-                                <h2>{form.id ? 'Редактировать запись' : 'Новая запись'}</h2>
+                                <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <CalendarIcon size={18} color="var(--green)" />
+                                    <span>{form.id ? 'Редактировать запись' : 'Новая запись'}</span>
+                                </h2>
                                 <div style={{
                                     display: 'inline-flex', alignItems: 'center', gap: 6,
                                     marginTop: 6, background: 'var(--bg-panel)',
                                     borderRadius: 99, padding: '4px 12px',
                                     fontSize: 12, color: 'var(--text-muted)', fontWeight: 600,
+                                    border: '1px solid var(--border)'
                                 }}>
-                                    {form.date} · {form.time?.slice(0, 5)}
+                                    <Clock size={12} color="var(--green)" />
+                                    <span>{form.date} · {form.time?.slice(0, 5)}</span>
                                 </div>
                             </div>
-                            <button className="modal-close" onClick={closeModal}><X size={20} /></button>
+                            <button className="modal-close" onClick={closeModal}><X size={18} /></button>
                         </div>
 
                         <form onSubmit={handleSave}>

@@ -18,6 +18,7 @@ import { Search, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, X, Wall
 import { barberApi, barberBookingsApi } from '../../api';
 import { useToast } from '../../components/Toast';
 import CustomSelect from '../../components/CustomSelect';
+import ConfirmModal from '../../components/ConfirmModal';
 
 const STATUS_LABELS = {
     pending: 'Ожидает', confirmed: 'Принято',
@@ -29,9 +30,9 @@ const STATUS_BADGE = {
 };
 
 const EXTRA_SERVICES = [
-    { key: 'hair_wash', icon: <Droplets size={18} />, emoji: '🧴', name: 'Мытьё головы', priceKey: 'price_hair_wash' },
-    { key: 'beard',     icon: <Scissors size={18} />, emoji: '🧔', name: 'Борода',       priceKey: 'price_beard' },
-    { key: 'mask',      icon: <Sparkles size={18} />, emoji: '💆', name: 'Маска',        priceKey: 'price_mask' },
+    { key: 'hair_wash', icon: Droplets, name: 'Мытьё головы', priceKey: 'price_hair_wash' },
+    { key: 'beard',     icon: Scissors, name: 'Борода',        priceKey: 'price_beard' },
+    { key: 'mask',      icon: Sparkles, name: 'Маска',         priceKey: 'price_mask' },
 ];
 
 function fmtDate(d) {
@@ -52,6 +53,7 @@ export default function BarberHistory() {
 
     // Pay modal
     const [payModal, setPayModal]             = useState(null);
+    const [cancelBooking, setCancelBooking]   = useState(null);
     const [selectedServiceId, setSelectedServiceId] = useState('');
     const [selectedExtras, setSelectedExtras] = useState([]);
     const [payMethod, setPayMethod]           = useState('');
@@ -158,12 +160,17 @@ export default function BarberHistory() {
         if (b.status === 'done' && !b.is_paid) openPayModal(b);
     }
 
-    async function handleCancel(b, e) {
+    function handleCancel(b, e) {
         e.stopPropagation();
-        if (!confirm(`Отменить запись клиента ${b.client_name}?`)) return;
+        setCancelBooking(b);
+    }
+
+    async function executeCancel() {
+        if (!cancelBooking) return;
         try {
-            await barberApi.updateBookingStatus(b.id, 'cancelled');
+            await barberApi.updateBookingStatus(cancelBooking.id, 'cancelled');
             showToast('Запись отменена');
+            setCancelBooking(null);
             load();
         } catch (err) { showToast(err.response?.data?.detail || 'Ошибка', true); }
     }
@@ -227,10 +234,14 @@ export default function BarberHistory() {
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div className="hcard-name">{b.client_name}</div>
                                         <div className="hcard-sub">{b.client_phone}</div>
-                                        {b.service_name && <div className="hcard-service">✂️ {b.service_name}</div>}
+                                        {b.service_name && <div className="hcard-service" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Scissors size={12} color="var(--text-muted)" /> {b.service_name}</div>}
                                         {b.extra_services?.length > 0 && (
-                                            <div className="hcard-service">
-                                                {b.extra_services.map((k) => EXTRA_SERVICES.find((s) => s.key === k)?.emoji || k).join(' ')}
+                                            <div className="hcard-service" style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 2 }}>
+                                                {b.extra_services.map((k) => {
+                                                    const svc = EXTRA_SERVICES.find((s) => s.key === k);
+                                                    const Icon = svc?.icon;
+                                                    return Icon ? <Icon key={k} size={13} color="var(--text-muted)" title={svc.name} /> : <span key={k}>{k}</span>;
+                                                })}
                                             </div>
                                         )}
                                     </div>
@@ -289,11 +300,22 @@ export default function BarberHistory() {
                 <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closePayModal()}>
                     <div className="modal-box">
                         <div className="modal-header">
-                            <div>
-                                <h2>Оплата</h2>
-                                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>{payModal.client_name} · {fmtDate(payModal.date)} {fmtTime(payModal.time)}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{
+                                    width: 44, height: 44, borderRadius: 12,
+                                    background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
+                                    border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--green)', flexShrink: 0
+                                }}>
+                                    <Wallet size={22} />
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: 18 }}>Оплата услуги</h2>
+                                    <div className="modal-subtitle">{payModal.client_name} · {fmtDate(payModal.date)} {fmtTime(payModal.time)}</div>
+                                </div>
                             </div>
-                            <button className="modal-close" onClick={closePayModal}><X size={20} /></button>
+                            <button className="modal-close" onClick={closePayModal}><X size={18} /></button>
                         </div>
 
                         {/* ── Service selector ── */}
@@ -321,6 +343,7 @@ export default function BarberHistory() {
                             {EXTRA_SERVICES.map((svc) => {
                                 const isSelected = selectedExtras.includes(svc.key);
                                 const price = shopSettings[svc.priceKey] || 0;
+                                const Icon = svc.icon;
                                 return (
                                     <div
                                         key={svc.key}
@@ -328,7 +351,7 @@ export default function BarberHistory() {
                                         onClick={() => toggleExtra(svc.key)}
                                     >
                                         <div className="sci-left">
-                                            <span className="sci-emoji">{svc.icon}</span>
+                                            <span className="sci-emoji"><Icon size={17} color={isSelected ? 'var(--green)' : 'var(--text-muted)'} /></span>
                                             <span className="sci-name">{svc.name}</span>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -386,6 +409,18 @@ export default function BarberHistory() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Confirm Cancel Modal */}
+            {cancelBooking && (
+                <ConfirmModal
+                    title="Отмена записи"
+                    text={`Вы действительно хотите отменить запись клиента «${cancelBooking.client_name}»?`}
+                    confirmText="Отменить запись"
+                    danger={true}
+                    onConfirm={executeCancel}
+                    onCancel={() => setCancelBooking(null)}
+                />
             )}
         </>
     );

@@ -8,7 +8,7 @@
  * ------------------------------------------------------------
  */
 import { useEffect, useState } from 'react';
-import { X, Trash2, KeyRound, Power, Plus, Percent, Phone } from 'lucide-react';
+import { X, Trash2, KeyRound, Power, Plus, Percent, Phone, User, Coins, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { barbersApi } from '../../api';
 import { useToast } from '../../components/Toast';
 import { formatDate } from '../../utils';
@@ -22,6 +22,9 @@ export default function AdminBarbers() {
     const [loading, setLoading]       = useState(true);
     const [createOpen, setCreateOpen] = useState(false);
     const [editBarber, setEditBarber] = useState(null);
+    const [passwordBarber, setPasswordBarber] = useState(null);
+    const [newPassword, setNewPassword]       = useState('');
+    const [showPassword, setShowPassword]     = useState(false);
     const [editSalaryType, setEditSalaryType] = useState('percent');
     const [editSalaryAmount, setEditSalaryAmount] = useState(50);
     const [form, setForm]             = useState(emptyForm);
@@ -31,10 +34,10 @@ export default function AdminBarbers() {
 
     // Lock body scroll on any modal open
     useEffect(() => {
-        const open = createOpen || !!editBarber;
+        const open = createOpen || !!editBarber || !!passwordBarber;
         document.body.classList.toggle('modal-open', open);
         return () => document.body.classList.remove('modal-open');
-    }, [createOpen, editBarber]);
+    }, [createOpen, editBarber, passwordBarber]);
 
     async function load() {
         setLoading(true);
@@ -87,11 +90,30 @@ export default function AdminBarbers() {
         load();
     }
 
-    async function resetPassword(b) {
-        const newPassword = prompt(`Новый пароль для ${b.full_name}:`);
-        if (!newPassword) return;
-        await barbersApi.update(b.id, { password: newPassword });
-        showToast('Пароль обновлён');
+    function resetPassword(b) {
+        setPasswordBarber(b);
+        setNewPassword('');
+        setShowPassword(false);
+    }
+
+    function generateRandomPassword() {
+        setNewPassword(Math.random().toString(36).slice(-8));
+    }
+
+    async function handleSavePassword(e) {
+        e.preventDefault();
+        if (!newPassword || newPassword.length < 4) {
+            showToast('Пароль должен быть не менее 4 символов', true);
+            return;
+        }
+        try {
+            await barbersApi.update(passwordBarber.id, { password: newPassword });
+            showToast('Пароль успешно обновлён');
+            setPasswordBarber(null);
+            setNewPassword('');
+        } catch (err) {
+            showToast(err.response?.data?.detail || 'Ошибка обновления пароля', true);
+        }
     }
 
     async function remove(b) {
@@ -173,11 +195,19 @@ export default function AdminBarbers() {
 
             {/* ── Create modal ── */}
             {createOpen && (
-                <div className="modal-overlay">
-                    <div className="modal-box" style={{ maxWidth: 420 }}>
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setCreateOpen(false)}>
+                    <div className="modal-box" style={{ maxWidth: 440 }}>
                         <div className="modal-header">
-                            <h2>Новый барбер</h2>
-                            <button className="modal-close" onClick={() => setCreateOpen(false)}><X size={20} /></button>
+                            <div>
+                                <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <User size={18} color="var(--green)" />
+                                    <span>Новый сотрудник</span>
+                                </h2>
+                                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                                    Добавление мастера и настройка условий зарплаты
+                                </div>
+                            </div>
+                            <button className="modal-close" onClick={() => setCreateOpen(false)}><X size={18} /></button>
                         </div>
                         <form onSubmit={handleCreate}>
                             <div className="form-group">
@@ -224,11 +254,17 @@ export default function AdminBarbers() {
 
             {/* ── Edit salary modal ── */}
             {editBarber && (
-                <div className="modal-overlay">
-                    <div className="modal-box" style={{ maxWidth: 340 }}>
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setEditBarber(null)}>
+                    <div className="modal-box" style={{ maxWidth: 360 }}>
                         <div className="modal-header">
-                            <h2>Зарплата</h2>
-                            <button className="modal-close" onClick={() => setEditBarber(null)}><X size={20} /></button>
+                            <div>
+                                <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <Coins size={18} color="var(--green)" />
+                                    <span>Условия оплаты</span>
+                                </h2>
+                                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{editBarber.full_name}</div>
+                            </div>
+                            <button className="modal-close" onClick={() => setEditBarber(null)}><X size={18} /></button>
                         </div>
                         <div style={{ marginBottom: 16, fontWeight: 600 }}>{editBarber.full_name}</div>
                         <form onSubmit={handleSaveSalary}>
@@ -260,6 +296,96 @@ export default function AdminBarbers() {
                             <div className="modal-actions">
                                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Сохранить</button>
                                 <button type="button" className="btn btn-outline" onClick={() => setEditBarber(null)}>Отмена</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Reset Password modal ── */}
+            {passwordBarber && (
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setPasswordBarber(null)}>
+                    <div className="modal-box" style={{ maxWidth: 420 }}>
+                        <div className="modal-header">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{
+                                    width: 44, height: 44, borderRadius: 12,
+                                    background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
+                                    border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--green)', flexShrink: 0
+                                }}>
+                                    <KeyRound size={22} />
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: 18 }}>Смена пароля</h2>
+                                    <div className="modal-subtitle">
+                                        Сотрудник: {passwordBarber.full_name}
+                                    </div>
+                                </div>
+                            </div>
+                            <button className="modal-close" onClick={() => setPasswordBarber(null)}><X size={18} /></button>
+                        </div>
+
+                        <form onSubmit={handleSavePassword}>
+                            <div className="form-group">
+                                <label>Логин для входа</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    value={passwordBarber.login}
+                                    disabled
+                                    style={{ opacity: 0.7 }}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                    <label style={{ margin: 0 }}>Новый пароль</label>
+                                    <button
+                                        type="button"
+                                        onClick={generateRandomPassword}
+                                        style={{
+                                            background: 'none', border: 'none', color: 'var(--green)',
+                                            cursor: 'pointer', fontSize: 12, display: 'inline-flex',
+                                            alignItems: 'center', gap: 4, padding: 0
+                                        }}
+                                    >
+                                        <RefreshCw size={12} /> Сгенерировать
+                                    </button>
+                                </div>
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        className="form-control"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        placeholder="Минимум 4 символа"
+                                        required
+                                        style={{ paddingRight: 40 }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        style={{
+                                            position: 'absolute', right: 10, top: '50%',
+                                            transform: 'translateY(-50%)', background: 'none',
+                                            border: 'none', color: 'var(--text-muted)',
+                                            cursor: 'pointer', padding: 4
+                                        }}
+                                    >
+                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="modal-actions">
+                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                                    Сохранить пароль
+                                </button>
+                                <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setPasswordBarber(null)}>
+                                    Отмена
+                                </button>
                             </div>
                         </form>
                     </div>

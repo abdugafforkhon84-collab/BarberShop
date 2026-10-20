@@ -10,6 +10,7 @@ import { Plus, Trash2, X, Wallet, DollarSign } from 'lucide-react';
 import { paymentsApi, barbersApi } from '../../api';
 import { useToast } from '../../components/Toast';
 import CustomSelect from '../../components/CustomSelect';
+import ConfirmModal from '../../components/ConfirmModal';
 import { formatDate, formatMoney } from '../../utils';
 
 const emptyForm = {
@@ -23,6 +24,7 @@ export default function AdminPayments() {
     const [barbers, setBarbers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
+    const [deletePaymentId, setDeletePaymentId] = useState(null);
     const [form, setForm] = useState(emptyForm);
 
     useEffect(() => { load(); }, []);
@@ -66,11 +68,20 @@ export default function AdminPayments() {
         }
     }
 
-    async function remove(id) {
-        if (!confirm('Удалить выплату? Баланс сотрудника будет пересчитан.')) return;
-        await paymentsApi.remove(id);
-        showToast('Выплата удалена');
-        load();
+    function remove(id) {
+        setDeletePaymentId(id);
+    }
+
+    async function executeRemove() {
+        if (!deletePaymentId) return;
+        try {
+            await paymentsApi.remove(deletePaymentId);
+            showToast('Выплата удалена');
+            setDeletePaymentId(null);
+            load();
+        } catch (err) {
+            showToast(err.response?.data?.detail || 'Ошибка при удалении', true);
+        }
     }
 
     return (
@@ -159,10 +170,26 @@ export default function AdminPayments() {
 
             {modalOpen && (
                 <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setModalOpen(false)}>
-                    <div className="modal-box" style={{ maxWidth: 420 }}>
+                    <div className="modal-box" style={{ maxWidth: 440 }}>
                         <div className="modal-header">
-                            <h2>Новая выплата</h2>
-                            <button className="modal-close" onClick={() => setModalOpen(false)}><X size={20} /></button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{
+                                    width: 44, height: 44, borderRadius: 12,
+                                    background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
+                                    border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--green)', flexShrink: 0
+                                }}>
+                                    <Wallet size={22} />
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: 18 }}>Новая выплата</h2>
+                                    <div className="modal-subtitle">
+                                        Начисление или выплата заработанных средств мастеру
+                                    </div>
+                                </div>
+                            </div>
+                            <button className="modal-close" onClick={() => setModalOpen(false)}><X size={18} /></button>
                         </div>
                         <form onSubmit={handleSave}>
                             <div className="form-group">
@@ -206,12 +233,24 @@ export default function AdminPayments() {
                                 <textarea className="form-control" rows={2} value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
                             </div>
                             <div className="modal-actions">
-                                <button type="submit" className="btn btn-primary">Сохранить</button>
-                                <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Отмена</button>
+                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Сохранить</button>
+                                <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setModalOpen(false)}>Отмена</button>
                             </div>
                         </form>
                     </div>
                 </div>
+            )}
+
+            {/* Confirm Delete Payment Modal */}
+            {deletePaymentId && (
+                <ConfirmModal
+                    title="Удаление выплаты"
+                    text="Вы действительно хотите удалить эту запись о выплате? Баланс сотрудника будет автоматически пересчитан."
+                    confirmText="Удалить выплату"
+                    danger={true}
+                    onConfirm={executeRemove}
+                    onCancel={() => setDeletePaymentId(null)}
+                />
             )}
         </>
     );

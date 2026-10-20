@@ -5,6 +5,7 @@
  * ------------------------------------------------------------
  */
 import { createContext, useCallback, useContext, useState } from 'react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 const ToastContext = createContext(null);
 
@@ -20,8 +21,24 @@ export function ToastProvider({ children }) {
         <ToastContext.Provider value={showToast}>
             {children}
             {toast && (
-                <div className={`toast show ${toast.isError ? 'error' : ''}`} key={toast.id}>
-                    {toast.message}
+                <div 
+                    className={`toast show ${toast.isError ? 'error' : ''}`} 
+                    key={toast.id}
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+                        backdropFilter: 'blur(12px)',
+                        zIndex: 9999
+                    }}
+                >
+                    {toast.isError ? (
+                        <AlertCircle size={18} color="var(--status-cancelled)" />
+                    ) : (
+                        <CheckCircle2 size={18} color="var(--green)" />
+                    )}
+                    <span>{toast.message}</span>
                 </div>
             )}
         </ToastContext.Provider>

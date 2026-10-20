@@ -28,6 +28,7 @@ import AdminReports from './pages/admin/Reports';
 import AdminPayments from './pages/admin/Payments';
 import AdminSettings from './pages/admin/Settings';
 import AdminServices from './pages/admin/Services';
+import AdminClients from './pages/admin/Clients';
 
 import BarberLayout from './pages/barber/BarberLayout';
 import BarberCalendar from './pages/barber/Calendar';
@@ -36,6 +37,7 @@ import BarberHistory from './pages/barber/History';
 import BarberReports from './pages/barber/Reports';
 import BarberServices from './pages/barber/Services';
 import BarberSettings from './pages/barber/Settings';
+import ThemesPage from './pages/ThemesPage';
 
 const HOME_BY_ROLE = {
     superadmin: '/superadmin',
@@ -47,7 +49,7 @@ export default function App() {
     const { isAuthenticated, role, shopTheme } = useAuth();
 
     useEffect(() => {
-        const activeTheme = shopTheme || 'dark';
+        const activeTheme = localStorage.getItem('barberpro_theme') || shopTheme || 'dark';
         document.documentElement.setAttribute('data-theme', activeTheme);
     }, [isAuthenticated, shopTheme]);
 
@@ -79,12 +81,14 @@ export default function App() {
             >
                 <Route index element={<Navigate to="bookings" replace />} />
                 <Route path="bookings" element={<AdminBookings />} />
+                <Route path="clients" element={<AdminClients />} />
                 <Route path="history" element={<AdminHistory />} />
                 <Route path="barbers" element={<AdminBarbers />} />
                 <Route path="reports" element={<AdminReports />} />
                 <Route path="payments" element={<AdminPayments />} />
                 <Route path="services" element={<AdminServices />} />
                 <Route path="settings" element={<AdminSettings />} />
+                <Route path="themes" element={<ThemesPage />} />
             </Route>
 
             <Route
@@ -102,7 +106,17 @@ export default function App() {
                 <Route path="reports" element={<BarberReports />} />
                 <Route path="services" element={<BarberServices />} />
                 <Route path="settings" element={<BarberSettings />} />
+                <Route path="themes" element={<ThemesPage />} />
             </Route>
+
+            <Route
+                path="/themes"
+                element={
+                    <ProtectedRoute>
+                        <ThemesPage />
+                    </ProtectedRoute>
+                }
+            />
 
             <Route
                 path="/"

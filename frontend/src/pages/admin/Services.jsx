@@ -6,6 +6,7 @@
  */
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { servicesApi, settingsApi } from '../../api';
 import { useToast } from '../../components/Toast';
 import { formatMoney } from '../../utils';
@@ -123,7 +124,7 @@ export default function AdminServices() {
             {shopSettings && (
                 <form onSubmit={handleSaveSettings} className="card" style={{ marginTop: 24, padding: 20 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
-                        <span style={{ fontSize: 18 }}>✨</span>
+                        <Sparkles size={18} color="var(--green)" />
                         <span>Прайс дополнительных услуг</span>
                     </div>
 
@@ -175,8 +176,16 @@ export default function AdminServices() {
                 <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setModalOpen(false)}>
                     <div className="modal-box" style={{ maxWidth: 400 }}>
                         <div className="modal-header">
-                            <h2>{form.id ? 'Изменить услугу' : 'Новая услуга'}</h2>
-                            <button className="modal-close" onClick={() => setModalOpen(false)}><X size={20} /></button>
+                            <div>
+                                <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <Scissors size={18} color="var(--green)" />
+                                    <span>{form.id ? 'Изменить услугу' : 'Новая услуга'}</span>
+                                </h2>
+                                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                                    Настройка параметров услуги, стоимости и времени выполнения
+                                </div>
+                            </div>
+                            <button className="modal-close" onClick={() => setModalOpen(false)}><X size={18} /></button>
                         </div>
                         <form onSubmit={handleSave}>
                             <div className="form-group">

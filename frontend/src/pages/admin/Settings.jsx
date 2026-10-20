@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { settingsApi, adminBranchesApi } from '../../api';
 import { useToast } from '../../components/Toast';
-import { Building2, ShieldCheck, Coins, Palette, Users, Wallet, Scissors, History, LogOut, User, Save, Clock, Phone, MapPin, Sparkles, Map } from 'lucide-react';
+import { Building2, ShieldCheck, Coins, Palette, Users, Wallet, Scissors, History, LogOut, User, Save, Clock, Phone, MapPin, Sparkles, Map, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -141,16 +141,46 @@ export default function AdminSettings() {
                 </div>
             )}
 
-            {/* Themes */}
-            <div className="card" style={{ marginBottom: 24 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15, marginBottom: 14 }}>
-                    <Palette size={18} color="var(--green)" />
-                    <span>Тема оформления</span>
+            {/* Themes Link Card */}
+            <div 
+                className="card" 
+                onClick={() => navigate('/admin/themes')}
+                style={{ 
+                    marginBottom: 24, 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '16px 20px',
+                    transition: 'var(--transition)'
+                }}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 12,
+                        background: 'var(--green-glow)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--green)',
+                        flexShrink: 0
+                    }}>
+                        <Palette size={22} />
+                    </div>
+                    <div>
+                        <div style={{ fontWeight: 700, fontSize: 15 }}>Темы оформления</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                            Тёмный, Светлый, Розовый и Золотой Люкс · Нажмите для выбора
+                        </div>
+                    </div>
                 </div>
-                <div className="tag-switch">
-                    <button onClick={() => setTheme('dark')}>Тёмная</button>
-                    <button onClick={() => setTheme('light')}>Светлая</button>
-                    <button onClick={() => setTheme('pink')}>Розовая</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="badge" style={{ background: 'var(--green-glow)', color: 'var(--green)', fontSize: 11, fontWeight: 700 }}>
+                        {form?.theme === 'light' ? 'Светлая' : form?.theme === 'pink' ? 'Розовая' : form?.theme === 'luxury' || form?.theme === 'gold' ? 'Люкс Золото' : 'Тёмная'}
+                    </span>
+                    <ChevronRight size={18} color="var(--text-muted)" />
                 </div>
             </div>
 
@@ -311,16 +341,22 @@ export default function AdminSettings() {
                             </select>
                         </div>
                         <div className="form-group">
-                            <label className="field-label">Цветовая тема</label>
+                            <label className="field-label">Цветовая тема по умолчанию</label>
                             <select
                                 className="input"
                                 value={form.theme || 'dark'}
-                                onChange={(e) => setForm({ ...form, theme: e.target.value })}
+                                onChange={(e) => {
+                                    const t = e.target.value;
+                                    setForm({ ...form, theme: t });
+                                    setShopTheme(t);
+                                    localStorage.setItem('barberpro_theme', t);
+                                    document.documentElement.setAttribute('data-theme', t);
+                                }}
                             >
-                                <option value="dark">Тёмная (Dark)</option>
-                                <option value="light">Светлая (Light)</option>
-                                <option value="green">Зелёная (Green)</option>
-                                <option value="blue">Синяя (Blue)</option>
+                                <option value="dark">Тёмный сапфир (Dark Classic)</option>
+                                <option value="light">Светлый кристалл (Light Clean)</option>
+                                <option value="pink">Розовый барби (Rose Blossom)</option>
+                                <option value="luxury">Королевский Люкс (Royal Gold Luxury)</option>
                             </select>
                         </div>
                     </div>

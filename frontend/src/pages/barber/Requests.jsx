@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { MessageSquare } from 'lucide-react';
 import { barberApi } from '../../api';
 import { useToast } from '../../components/Toast';
+import ConfirmModal from '../../components/ConfirmModal';
 import { formatDate, formatMoney, statusBadge } from '../../utils';
 
 const FILTERS = [
@@ -25,6 +26,7 @@ export default function BarberRequests() {
     const [filter, setFilter] = useState('');
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [declineId, setDeclineId] = useState(null);
 
     useEffect(() => { load(); }, [filter]);
 
@@ -42,11 +44,20 @@ export default function BarberRequests() {
         showToast('Заявка принята');
         load();
     }
-    async function decline(id) {
-        if (!confirm('Отклонить эту заявку?')) return;
-        await barberApi.decline(id);
-        showToast('Заявка отклонена');
-        load();
+    function decline(id) {
+        setDeclineId(id);
+    }
+
+    async function executeDecline() {
+        if (!declineId) return;
+        try {
+            await barberApi.decline(declineId);
+            showToast('Заявка отклонена');
+            setDeclineId(null);
+            load();
+        } catch (err) {
+            showToast(err.response?.data?.detail || 'Ошибка отклонения', true);
+        }
     }
     async function complete(id) {
         await barberApi.complete(id);
@@ -103,6 +114,17 @@ export default function BarberRequests() {
                     </div>
                 ))}
             </div>
+
+            {declineId && (
+                <ConfirmModal
+                    title="Отклонение заявки"
+                    text="Вы уверены, что хотите отклонить эту онлайн-заявку клиента?"
+                    confirmText="Отклонить заявку"
+                    danger={true}
+                    onConfirm={executeDecline}
+                    onCancel={() => setDeclineId(null)}
+                />
+            )}
         </>
     );
 }

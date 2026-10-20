@@ -17,8 +17,19 @@ export function AuthProvider({ children }) {
     const [role, setRole] = useState(() => localStorage.getItem('barberpro_role'));
     const [fullName, setFullName] = useState(() => localStorage.getItem('barberpro_name'));
     const [shopName, setShopName] = useState(() => localStorage.getItem('barberpro_shop'));
-    const [shopTheme, setShopTheme] = useState(() => localStorage.getItem('barberpro_theme'));
+    const [shopTheme, setShopThemeState] = useState(() => localStorage.getItem('barberpro_theme'));
     const [shopType, setShopType] = useState(() => localStorage.getItem('barberpro_shop_type'));
+
+    const setShopTheme = useCallback((theme) => {
+        setShopThemeState(theme);
+        if (theme) {
+            localStorage.setItem('barberpro_theme', theme);
+            document.documentElement.setAttribute('data-theme', theme);
+        } else {
+            localStorage.removeItem('barberpro_theme');
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    }, []);
 
     const login = useCallback(async (loginValue, password) => {
         const data = await authApi.login(loginValue, password);

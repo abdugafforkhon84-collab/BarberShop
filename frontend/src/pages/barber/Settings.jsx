@@ -1,21 +1,25 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { History, Scissors, LogOut, Palette } from 'lucide-react';
+import { History, Scissors, LogOut, Palette, ChevronRight } from 'lucide-react';
 
 export default function BarberSettings() {
     const navigate = useNavigate();
-    const { logout, fullName, role, shopName } = useAuth();
+    const { logout, fullName, role, shopName, shopTheme } = useAuth();
 
     function handleLogout() {
         logout();
         navigate('/login');
     }
 
-    function setTheme(theme) {
-        const themeKey = `barberpro_theme_${role}_${shopName || 'master'}`;
-        localStorage.setItem(themeKey, theme);
-        document.documentElement.setAttribute('data-theme', theme);
-    }
+    const currentTheme = localStorage.getItem('barberpro_theme') || shopTheme || 'dark';
+
+    const THEME_NAMES = {
+        dark: 'Тёмная',
+        light: 'Светлая',
+        pink: 'Розовая',
+        luxury: 'Люкс Золото',
+        gold: 'Люкс Золото'
+    };
 
     return (
         <div style={{ maxWidth: 640 }}>
@@ -36,28 +40,33 @@ export default function BarberSettings() {
                         <History size={20} color="var(--green)" />
                         <span className="sci-name">Моя история записей</span>
                     </div>
+                    <ChevronRight size={18} color="var(--text-muted)" />
                 </button>
                 <button className="service-check-item" onClick={() => navigate('/barber/services')}>
                     <div className="sci-left">
                         <Scissors size={20} color="var(--green)" />
                         <span className="sci-name">Мои услуги</span>
                     </div>
+                    <ChevronRight size={18} color="var(--text-muted)" />
+                </button>
+                <button className="service-check-item" onClick={() => navigate('/barber/themes')}>
+                    <div className="sci-left">
+                        <Palette size={20} color="var(--green)" />
+                        <div>
+                            <div className="sci-name">Темы оформления</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                Выбор: Тёмный, Светлый, Розовый, Золотой Люкс
+                            </div>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span className="badge" style={{ background: 'var(--green-glow)', color: 'var(--green)', fontSize: 11, fontWeight: 700 }}>
+                            {THEME_NAMES[currentTheme] || 'Тёмная'}
+                        </span>
+                        <ChevronRight size={18} color="var(--text-muted)" />
+                    </div>
                 </button>
             </div>
-
-            {/* Themes */}
-            <div className="card" style={{ marginBottom: 24 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15, marginBottom: 14 }}>
-                    <Palette size={18} color="var(--green)" />
-                    <span>Тема оформления</span>
-                </div>
-                <div className="tag-switch">
-                    <button onClick={() => setTheme('dark')}>Тёмная</button>
-                    <button onClick={() => setTheme('light')}>Светлая</button>
-                    <button onClick={() => setTheme('pink')}>Розовая</button>
-                </div>
-            </div>
-
         </div>
     );
 }

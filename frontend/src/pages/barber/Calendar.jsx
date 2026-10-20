@@ -14,9 +14,10 @@
  */
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Search, Calendar as CalIcon } from 'lucide-react';
+import { X, Search, Calendar as CalIcon, Clock, User } from 'lucide-react';
 import { barberApi, barberBookingsApi, sharedSettingsApi } from '../../api';
 import { useToast } from '../../components/Toast';
+import ConfirmModal from '../../components/ConfirmModal';
 import WeeklyCalendar, { getWeekStart } from '../../components/WeeklyCalendar';
 
 function toDateStr(d) { return d.toISOString().slice(0, 10); }
@@ -49,6 +50,7 @@ export default function BarberCalendar() {
 
     // modal state
     const [modal, setModal] = useState(null); // null | { mode:'create'|'view', booking?, date?, time? }
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
     // Create form state
     const [tab, setTab]                     = useState('existing'); // 'existing' | 'new'
@@ -174,14 +176,19 @@ export default function BarberCalendar() {
         } catch (err) { showToast(err.response?.data?.detail || 'Ошибка', true); }
     }
 
-    async function handleDelete(bookingId) {
-        if (!confirm('Удалить эту запись?')) return;
+    function handleDelete(bookingId) {
+        setConfirmDeleteId(bookingId);
+    }
+
+    async function executeDelete() {
+        if (!confirmDeleteId) return;
         try {
-            await barberBookingsApi.remove(bookingId);
+            await barberBookingsApi.remove(confirmDeleteId);
             showToast('Запись удалена');
+            setConfirmDeleteId(null);
             closeModal();
             loadBookings();
-        } catch (err) { showToast(err.response?.data?.detail || 'Ошибка', true); }
+        } catch (err) { showToast(err.response?.data?.detail || 'Ошибка при удалении', true); }
     }
 
     const b = modal?.booking;
@@ -225,20 +232,31 @@ export default function BarberCalendar() {
                 <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closeModal()}>
                     <div className="modal-box" style={{ maxWidth: 420 }}>
                         <div className="modal-header">
-                            <div>
-                                <h2>Новая запись</h2>
-                                {/* Date + time shown as info — not editable */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                 <div style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                                    marginTop: 6, background: 'var(--bg-panel)',
-                                    borderRadius: 99, padding: '5px 12px',
-                                    fontSize: 12, color: 'var(--text-muted)', fontWeight: 600,
+                                    width: 44, height: 44, borderRadius: 12,
+                                    background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
+                                    border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--green)', flexShrink: 0
                                 }}>
-                                    <CalIcon size={12} />
-                                    {fmtDateRu(modal.date)} · {modal.time?.slice(0, 5)}
+                                    <CalIcon size={22} />
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: 18 }}>Новая запись</h2>
+                                    <div style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                                        marginTop: 4, background: 'var(--bg-panel)',
+                                        borderRadius: 99, padding: '3px 10px',
+                                        fontSize: 12, color: 'var(--text-muted)', fontWeight: 600,
+                                        border: '1px solid var(--border)'
+                                    }}>
+                                        <Clock size={12} style={{ color: 'var(--green)' }} />
+                                        {fmtDateRu(modal.date)} · {modal.time?.slice(0, 5)}
+                                    </div>
                                 </div>
                             </div>
-                            <button className="modal-close" onClick={closeModal}><X size={20} /></button>
+                            <button className="modal-close" onClick={closeModal}><X size={18} /></button>
                         </div>
 
                         {/* Tabs */}
@@ -376,10 +394,24 @@ export default function BarberCalendar() {
             {/* ───── VIEW modal ───── */}
             {modal?.mode === 'view' && b && (
                 <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closeModal()}>
-                    <div className="modal-box" style={{ maxWidth: 400 }}>
+                    <div className="modal-box" style={{ maxWidth: 420 }}>
                         <div className="modal-header">
-                            <h2>{b.client_name}</h2>
-                            <button className="modal-close" onClick={closeModal}><X size={20} /></button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{
+                                    width: 44, height: 44, borderRadius: 12,
+                                    background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
+                                    border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--green)', flexShrink: 0
+                                }}>
+                                    <User size={22} />
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: 18 }}>{b.client_name}</h2>
+                                    <div className="modal-subtitle">Карточка клиента и статус визита</div>
+                                </div>
+                            </div>
+                            <button className="modal-close" onClick={closeModal}><X size={18} /></button>
                         </div>
 
                         {/* Status badge */}
@@ -421,7 +453,7 @@ export default function BarberCalendar() {
                             <div className="modal-actions">
                                 {isDone && !b.is_paid && (
                                     <div style={{ width: '100%', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, marginBottom: 8 }}>
-                                        💡 Перейдите в «Историю» чтобы выбрать услугу и принять оплату
+                                        Перейдите в «Историю» чтобы выбрать услугу и принять оплату
                                     </div>
                                 )}
                                 <button className="btn btn-outline" style={{ flex: 1 }} onClick={closeModal}>Закрыть</button>
@@ -429,6 +461,18 @@ export default function BarberCalendar() {
                         )}
                     </div>
                 </div>
+            )}
+
+            {/* Confirm Delete Modal */}
+            {confirmDeleteId && (
+                <ConfirmModal
+                    title="Удаление записи"
+                    text="Вы действительно хотите удалить эту запись? Действие нельзя отменить."
+                    confirmText="Удалить запись"
+                    danger={true}
+                    onConfirm={executeDelete}
+                    onCancel={() => setConfirmDeleteId(null)}
+                />
             )}
         </>
     );

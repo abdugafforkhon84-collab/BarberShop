@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, KeyRound, Power, Trash2, X, Copy, Check, MapPin, RefreshCw, User, Phone, Coins, Settings2, Sparkles } from 'lucide-react';
+import { Plus, KeyRound, Power, Trash2, X, Copy, Check, MapPin, RefreshCw, User, Phone, Coins, Settings2, Sparkles, Building2, Eye, EyeOff } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -82,11 +82,16 @@ export default function SuperadminTenants() {
     });
     const [savingTariffs, setSavingTariffs] = useState(false);
 
+    // Password reset modal
+    const [passwordTenant, setPasswordTenant] = useState(null);
+    const [newAdminPassword, setNewAdminPassword] = useState('');
+    const [showAdminPassword, setShowAdminPassword] = useState(false);
+
     useEffect(() => {
-        const open = modalOpen || !!renewModal || tariffModalOpen;
+        const open = modalOpen || !!renewModal || tariffModalOpen || !!passwordTenant;
         document.body.classList.toggle('modal-open', open);
         return () => document.body.classList.remove('modal-open');
-    }, [modalOpen, renewModal, tariffModalOpen]);
+    }, [modalOpen, renewModal, tariffModalOpen, passwordTenant]);
 
     useEffect(() => { load(); }, []);
 
@@ -154,15 +159,25 @@ export default function SuperadminTenants() {
         load();
     }
 
-    async function resetPassword(t) {
-        let newPassword = prompt(`Укажите новый пароль для барбершопа «${t.shop_name}»:\n\nЕсли оставить пустым, будет сгенерирован случайный пароль.`);
-        if (newPassword === null) return; // cancel
-        if (newPassword.trim() === '') {
-            newPassword = randomPassword();
-            alert(`Сгенерирован новый пароль: ${newPassword}\n\nОбязательно скопируйте и сохраните его!`);
+    function resetPassword(t) {
+        setPasswordTenant(t);
+        setNewAdminPassword(randomPassword());
+        setShowAdminPassword(true);
+    }
+
+    async function handleSaveAdminPassword(e) {
+        e.preventDefault();
+        if (!newAdminPassword || newAdminPassword.length < 4) {
+            showToast('Пароль должен быть не менее 4 символов', true);
+            return;
         }
-        await superadminApi.update(t.id, { admin_password: newPassword });
-        showToast('Пароль обновлён');
+        try {
+            await superadminApi.update(passwordTenant.id, { admin_password: newAdminPassword });
+            showToast('Пароль администратора обновлён ✓');
+            setPasswordTenant(null);
+        } catch (err) {
+            showToast(err.response?.data?.detail || 'Ошибка обновления пароля', true);
+        }
     }
 
     function remove(t) {
@@ -341,19 +356,25 @@ export default function SuperadminTenants() {
 
             {/* Tariff Prices Modal */}
             {tariffModalOpen && (
-                <div className="modal-overlay">
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setTariffModalOpen(false)}>
                     <div className="modal-box" style={{ maxWidth: 440 }}>
                         <div className="modal-header">
-                            <div>
-                                <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 17 }}>
-                                    <Coins size={20} color="var(--green)" />
-                                    Цены на тарифы подписки
-                                </h2>
-                                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                                    Укажите стоимость для разных периодов подписки
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{
+                                    width: 44, height: 44, borderRadius: 12,
+                                    background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
+                                    border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--green)', flexShrink: 0
+                                }}>
+                                    <Coins size={22} />
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: 18 }}>Цены на тарифы</h2>
+                                    <div className="modal-subtitle">Стоимость периодов подписки для заведений</div>
                                 </div>
                             </div>
-                            <button className="modal-close" onClick={() => setTariffModalOpen(false)}><X size={20} /></button>
+                            <button className="modal-close" onClick={() => setTariffModalOpen(false)}><X size={18} /></button>
                         </div>
 
                         <form onSubmit={handleSaveTariffs}>
@@ -405,10 +426,10 @@ export default function SuperadminTenants() {
                             </div>
 
                             <div className="modal-actions" style={{ marginTop: 20 }}>
-                                <button type="submit" className="btn btn-primary" disabled={savingTariffs}>
+                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={savingTariffs}>
                                     {savingTariffs ? 'Сохранение...' : 'Сохранить цены'}
                                 </button>
-                                <button type="button" className="btn btn-outline" onClick={() => setTariffModalOpen(false)}>Отмена</button>
+                                <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setTariffModalOpen(false)}>Отмена</button>
                             </div>
                         </form>
                     </div>
@@ -417,11 +438,25 @@ export default function SuperadminTenants() {
 
             {/* Create modal */}
             {modalOpen && (
-                <div className="modal-overlay">
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closeModal()}>
                     <div className="modal-box" style={{ maxWidth: 520 }}>
                         <div className="modal-header">
-                            <h2>{form.parent_id ? "Новый филиал" : "Новый барбершоп"}</h2>
-                            <button className="modal-close" onClick={closeModal}><X size={20} /></button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{
+                                    width: 44, height: 44, borderRadius: 12,
+                                    background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
+                                    border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--green)', flexShrink: 0
+                                }}>
+                                    <Building2 size={22} />
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: 18 }}>{form.parent_id ? "Новый филиал" : "Новый барбершоп"}</h2>
+                                    <div className="modal-subtitle">Регистрация точки и учетной записи администратора</div>
+                                </div>
+                            </div>
+                            <button className="modal-close" onClick={closeModal}><X size={18} /></button>
                         </div>
                         <form onSubmit={handleSave}>
                             {/* Shop name */}
@@ -513,17 +548,31 @@ export default function SuperadminTenants() {
 
             {/* Renew modal */}
             {renewModal && (
-                <div className="modal-overlay">
-                    <div className="modal-box" style={{ maxWidth: 420 }}>
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setRenewModal(null)}>
+                    <div className="modal-box" style={{ maxWidth: 440 }}>
                         <div className="modal-header">
-                            <h2>Продлить тариф подписки</h2>
-                            <button className="modal-close" onClick={() => setRenewModal(null)}><X size={20} /></button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{
+                                    width: 44, height: 44, borderRadius: 12,
+                                    background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
+                                    border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--green)', flexShrink: 0
+                                }}>
+                                    <RefreshCw size={22} />
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: 18 }}>Продлить тариф</h2>
+                                    <div className="modal-subtitle">Подписка: {renewModal.shop_name}</div>
+                                </div>
+                            </div>
+                            <button className="modal-close" onClick={() => setRenewModal(null)}><X size={18} /></button>
                         </div>
                         <div style={{ marginBottom: 16 }}>
-                            <div style={{ fontWeight: 700, fontSize: 16 }}>{renewModal.shop_name}</div>
+                            <div style={{ fontWeight: 700, fontSize: 15 }}>{renewModal.shop_name}</div>
                             {renewModal.plan_end && (
                                 <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-                                    Текущий тариф до: {formatDate(renewModal.plan_end)}
+                                    Текущий тариф действует до: {formatDate(renewModal.plan_end)}
                                 </div>
                             )}
                         </div>
@@ -539,41 +588,117 @@ export default function SuperadminTenants() {
                             </div>
                         </div>
 
-                        <div style={{ background: 'var(--bg-panel)', padding: 12, borderRadius: 8, fontSize: 13, marginBottom: 16, border: '1px solid var(--border)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <div style={{ background: 'var(--bg-panel)', padding: 14, borderRadius: 12, fontSize: 13, marginBottom: 16, border: '1px solid var(--border)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                                 <span>Стоимость по тарифу ({renewMonths} мес):</span>
                                 <strong style={{ color: 'var(--text-muted)' }}>{getTariffPriceDisplay(Number(renewMonths))}</strong>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span>Итого к оплате:</span>
-                                <strong style={{ color: 'var(--green)', fontSize: 15 }}>
+                                <strong style={{ color: 'var(--green)', fontSize: 17 }}>
                                     {renewCustomPrice !== '' ? formatMoney(Number(renewCustomPrice)) : getTariffPriceDisplay(Number(renewMonths))}
                                 </strong>
                             </div>
                         </div>
 
                         <div className="modal-actions">
-                            <button className="btn btn-primary" onClick={handleRenew}>
+                            <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleRenew}>
                                 <RefreshCw size={16} /> Продлить на {renewMonths} мес
                             </button>
-                            <button className="btn btn-outline" onClick={() => { setRenewModal(null); setRenewCustomPrice(''); }}>Отмена</button>
+                            <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => { setRenewModal(null); setRenewCustomPrice(''); }}>Отмена</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {confirmConfig && (
-                <ConfirmModal
-                    title={confirmConfig.title}
-                    text={confirmConfig.text}
-                    danger={confirmConfig.danger}
-                    confirmText={confirmConfig.confirmText}
-                    onConfirm={() => {
-                        confirmConfig.action();
-                        setConfirmConfig(null);
-                    }}
-                    onCancel={() => setConfirmConfig(null)}
-                />
+            {/* Password Reset Modal */}
+            {passwordTenant && (
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setPasswordTenant(null)}>
+                    <div className="modal-box" style={{ maxWidth: 440 }}>
+                        <div className="modal-header">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{
+                                    width: 44, height: 44, borderRadius: 12,
+                                    background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
+                                    border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--green)', flexShrink: 0
+                                }}>
+                                    <KeyRound size={22} />
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: 18 }}>Смена пароля</h2>
+                                    <div className="modal-subtitle">
+                                        Барбершоп: {passwordTenant.shop_name}
+                                    </div>
+                                </div>
+                            </div>
+                            <button className="modal-close" onClick={() => setPasswordTenant(null)}><X size={18} /></button>
+                        </div>
+
+                        <form onSubmit={handleSaveAdminPassword}>
+                            <div className="form-group">
+                                <label>Логин администратора</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    value={passwordTenant.admin_login}
+                                    disabled
+                                    style={{ opacity: 0.7 }}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                    <label style={{ margin: 0 }}>Новый пароль</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNewAdminPassword(randomPassword())}
+                                        style={{
+                                            background: 'none', border: 'none', color: 'var(--green)',
+                                            cursor: 'pointer', fontSize: 12, display: 'inline-flex',
+                                            alignItems: 'center', gap: 4, padding: 0
+                                        }}
+                                    >
+                                        <RefreshCw size={12} /> Сгенерировать
+                                    </button>
+                                </div>
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        type={showAdminPassword ? 'text' : 'password'}
+                                        className="form-control"
+                                        value={newAdminPassword}
+                                        onChange={(e) => setNewAdminPassword(e.target.value)}
+                                        placeholder="Минимум 4 символа"
+                                        required
+                                        style={{ paddingRight: 40 }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAdminPassword(!showAdminPassword)}
+                                        style={{
+                                            position: 'absolute', right: 10, top: '50%',
+                                            transform: 'translateY(-50%)', background: 'none',
+                                            border: 'none', color: 'var(--text-muted)',
+                                            cursor: 'pointer', padding: 4
+                                        }}
+                                    >
+                                        {showAdminPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="modal-actions">
+                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                                    Сохранить пароль
+                                </button>
+                                <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setPasswordTenant(null)}>
+                                    Отмена
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
 
             {confirmConfig && (

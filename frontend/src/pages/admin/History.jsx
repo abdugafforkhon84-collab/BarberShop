@@ -16,21 +16,20 @@ import {
     Scissors, 
     Clock, 
     Calendar,
+    X,
     XCircle,
     User,
     Check,
-    Filter
+    Filter,
+    Droplets,
+    Sparkles
 } from 'lucide-react';
 
 
 const EXTRA_SERVICES = [
-    { key: 'hair_wash', label: 'Мытье', emoji: '💧', priceKey: 'price_hair_wash' },
-    { key: 'beard', label: 'Борода', emoji: '🧔', priceKey: 'price_beard' },
-    { key: 'mask', label: 'Маска', emoji: '🎭', priceKey: 'price_mask' },
-    { key: 'patch', label: 'Патчи', emoji: '👁️', priceKey: 'price_patch' },
-    { key: 'scrub', label: 'Скраб', emoji: '💆', priceKey: 'price_scrub' },
-    { key: 'wax', label: 'Воск', emoji: '🕯️', priceKey: 'price_wax' },
-    { key: 'styling', label: 'Укладка', emoji: '✨', priceKey: 'price_styling' },
+    { key: 'hair_wash', label: 'Мытьё', icon: Droplets, priceKey: 'price_hair_wash' },
+    { key: 'beard',    label: 'Борода', icon: Scissors, priceKey: 'price_beard' },
+    { key: 'mask',     label: 'Маска',  icon: Sparkles, priceKey: 'price_mask' },
 ];
 
 export default function AdminHistory() {
@@ -458,14 +457,23 @@ export default function AdminHistory() {
             {payModal && (
                 <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closePayModal()}>
                     <div className="modal-box" style={{ maxWidth: 440 }}>
-                        <div className="modal-header" style={{ marginBottom: 20 }}>
-                            <div>
-                                <h2 style={{ fontSize: 18 }}>Оплата ({payModal.client_name})</h2>
-                                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-                                    Выберите услугу, допы и способ оплаты
+                        <div className="modal-header">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{
+                                    width: 44, height: 44, borderRadius: 12,
+                                    background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
+                                    border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--green)', flexShrink: 0
+                                }}>
+                                    <Wallet size={22} />
+                                </div>
+                                <div>
+                                    <h2 style={{ margin: 0, fontSize: 18 }}>Оплата услуги</h2>
+                                    <div className="modal-subtitle">{payModal.client_name} · Выберите услугу и способ оплаты</div>
                                 </div>
                             </div>
-                            <button className="modal-close" onClick={closePayModal}><XCircle size={20} /></button>
+                            <button className="modal-close" onClick={closePayModal}><X size={18} /></button>
                         </div>
 
                         {/* Services List */}
@@ -504,22 +512,25 @@ export default function AdminHistory() {
                             <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                 Дополнительно
                             </label>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 8 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                                 {EXTRA_SERVICES.map((s) => {
                                     const active = selectedExtras.includes(s.key);
                                     const price = settings[s.priceKey] || 0;
+                                    const Icon = s.icon;
                                     return (
                                         <div
                                             key={s.key}
                                             onClick={() => toggleExtra(s.key)}
                                             style={{
-                                                padding: '10px 8px', borderRadius: 'var(--radius-md)', cursor: 'pointer', textAlign: 'center',
+                                                padding: '12px 8px', borderRadius: 'var(--radius-md)', cursor: 'pointer', textAlign: 'center',
                                                 border: active ? '1.5px solid var(--green)' : '1.5px solid var(--border)',
                                                 background: active ? 'rgba(51,209,122,0.08)' : 'var(--bg-card)',
-                                                userSelect: 'none', transition: 'all 0.1s'
+                                                userSelect: 'none', transition: 'all 0.15s'
                                             }}
                                         >
-                                            <div style={{ fontSize: 20, marginBottom: 4 }}>{s.emoji}</div>
+                                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+                                                <Icon size={20} color={active ? 'var(--green)' : 'var(--text-muted)'} />
+                                            </div>
                                             <div style={{ fontSize: 11, fontWeight: 600, color: active ? 'var(--green)' : 'var(--text-main)' }}>
                                                 {s.label}
                                             </div>
@@ -576,7 +587,7 @@ export default function AdminHistory() {
                             disabled={paying || !payMethod || (!selectedServiceId && services.length > 0)}
                             style={{ width: '100%', height: 48, fontSize: 15, marginTop: 16 }}
                         >
-                            {paying ? 'Сохранение...' : 'Подтвердить оплату ✓'}
+                            <Check size={16} /> {paying ? 'Сохранение...' : 'Подтвердить оплату'}
                         </button>
                     </div>
                 </div>
