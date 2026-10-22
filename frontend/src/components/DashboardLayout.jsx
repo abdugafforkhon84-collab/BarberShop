@@ -13,9 +13,18 @@ import {
     History, 
     Inbox, 
     Sparkles,
-    Shield
+    Shield,
+    Store,
+    Coins,
+    LayoutDashboard
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+const SUPERADMIN_DESKTOP_NAV = [
+    { to: '/superadmin/tenants', label: 'Барбершопы', icon: Store },
+    { to: '/superadmin/tariffs', label: 'Тарифы', icon: Coins },
+    { to: '/superadmin/dashboard', label: 'Отчёт платформы', icon: LayoutDashboard },
+];
 
 const ADMIN_DESKTOP_NAV = [
     { to: '/admin/bookings', label: 'Записи', icon: Calendar },
@@ -47,9 +56,28 @@ export default function DashboardLayout({ navItems, children }) {
         navigate('/login');
     }
 
-    const desktopNav = role === 'admin' ? ADMIN_DESKTOP_NAV : BARBER_DESKTOP_NAV;
-    const themesPath = role === 'admin' ? '/admin/themes' : '/barber/themes';
-    const brandLabel = shopName || 'BarberPro';
+    const desktopNav = role === 'superadmin' 
+        ? SUPERADMIN_DESKTOP_NAV 
+        : role === 'admin' 
+            ? ADMIN_DESKTOP_NAV 
+            : BARBER_DESKTOP_NAV;
+
+    const homePath = role === 'superadmin' 
+        ? '/superadmin/tenants' 
+        : role === 'admin' 
+            ? '/admin/bookings' 
+            : '/barber/calendar';
+
+    const themesPath = role === 'superadmin' 
+        ? '/themes' 
+        : role === 'admin' 
+            ? '/admin/themes' 
+            : '/barber/themes';
+
+    const brandLabel = role === 'superadmin' 
+        ? 'Платформа' 
+        : (shopName || 'BarberPro');
+
     const currentTheme = localStorage.getItem('barberpro_theme') || shopTheme || 'dark';
 
     const THEME_NAMES = {
@@ -65,14 +93,14 @@ export default function DashboardLayout({ navItems, children }) {
             {/* Desktop / Laptop Top Navigation Bar */}
             <header className="desktop-nav-header">
                 <div className="dnav-left">
-                    <div className="dnav-brand" onClick={() => navigate(role === 'admin' ? '/admin/bookings' : '/barber/calendar')}>
+                    <div className="dnav-brand" onClick={() => navigate(homePath)}>
                         <div className="brand-badge-icon">
                             <Scissors size={18} strokeWidth={2.4} />
                         </div>
                         <span className="brand-title">BarberPro</span>
                     </div>
 
-                    <div className="shop-pill" title={`Филиал: ${brandLabel}`}>
+                    <div className="shop-pill" title={role === 'superadmin' ? 'Панель супер-администратора' : `Филиал: ${brandLabel}`}>
                         <span className="status-live-dot" />
                         <span className="shop-name-text">{brandLabel}</span>
                     </div>
@@ -135,7 +163,7 @@ export default function DashboardLayout({ navItems, children }) {
 
             {/* Mobile Top Header (compact) */}
             <header className="mobile-nav-header">
-                <div className="mnav-left" onClick={() => navigate(role === 'admin' ? '/admin/bookings' : '/barber/calendar')}>
+                <div className="mnav-left" onClick={() => navigate(homePath)}>
                     <div className="brand-badge-icon sm">
                         <Scissors size={15} strokeWidth={2.4} />
                     </div>
@@ -173,7 +201,7 @@ export default function DashboardLayout({ navItems, children }) {
 
             {/* Mobile Bottom Navigation */}
             <nav className="bottom-nav">
-                {navItems.map((item, i) => (
+                {(navItems || []).map((item, i) => (
                     item.to ? (
                         <NavLink
                             key={item.to}
