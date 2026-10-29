@@ -4,6 +4,8 @@ backend/__pycache__/
 backend/app/__pycache__/
 backend/app/routers/__pycache__/
 backend/*.db
+*.db
+build_react_components.py
 backend/tenants_data/
 backend/.env
 
