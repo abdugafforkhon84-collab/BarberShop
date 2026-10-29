@@ -179,6 +179,20 @@ def update_booking(booking_id: int, payload: schemas.BookingUpdate, db: Session 
     if "extra_services" in data and isinstance(data["extra_services"], list):
         data["extra_services"] = _json.dumps(data["extra_services"])
 
+    if "client_name" in data:
+        c_name = data.pop("client_name")
+        if c_name and booking.client:
+            booking.client.name = c_name.strip()
+    if "client_phone" in data:
+        c_phone = data.pop("client_phone")
+        if booking.client:
+            clean_p = (c_phone or "").strip()
+            if clean_p:
+                booking.client.phone = clean_p
+            elif not booking.client.phone or not booking.client.phone.startswith("no-phone-"):
+                import uuid
+                booking.client.phone = f"no-phone-{uuid.uuid4().hex[:8]}"
+
     for field, value in data.items():
         setattr(booking, field, value)
 

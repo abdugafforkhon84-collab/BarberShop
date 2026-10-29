@@ -15,6 +15,7 @@ import { useToast } from '../../components/Toast';
 import CustomSelect from '../../components/CustomSelect';
 import WeeklyCalendar, { getWeekStart } from '../../components/WeeklyCalendar';
 import ConfirmModal from '../../components/ConfirmModal';
+import PaymentModal from '../../components/PaymentModal';
 import { STATUS_LABELS } from '../../utils';
 
 function toDateStr(d) { return d.toISOString().slice(0, 10); }
@@ -32,31 +33,32 @@ const emptyForm = {
 };
 
 const CALENDAR_STATUSES = [
-    { key: 'pending',     label: 'Ожидает',    color: 'var(--status-pending)' },
-    { key: 'confirmed',   label: 'Принято',    color: 'var(--status-confirmed)' },
+    { key: 'pending', label: 'Ожидает', color: 'var(--status-pending)' },
+    { key: 'confirmed', label: 'Принято', color: 'var(--status-confirmed)' },
     { key: 'rescheduled', label: 'Перенесено', color: 'var(--status-rescheduled)' },
-    { key: 'done',        label: 'Выполнено',  color: 'var(--status-done)' },
-    { key: 'cancelled',   label: 'Отменено',   color: 'var(--status-cancelled)' },
+    { key: 'done', label: 'Выполнено', color: 'var(--status-done)' },
+    { key: 'cancelled', label: 'Отменено', color: 'var(--status-cancelled)' },
 ];
 
 export default function AdminBookings() {
     const showToast = useToast();
     const navigate = useNavigate();
     const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
-    const [bookings, setBookings]   = useState([]);
-    const [barbers, setBarbers]     = useState([]);
-    const [settings, setSettings]   = useState({ work_start: '08:00', work_end: '22:00', slot_minutes: 30 });
+    const [bookings, setBookings] = useState([]);
+    const [barbers, setBarbers] = useState([]);
+    const [settings, setSettings] = useState({ work_start: '08:00', work_end: '22:00', slot_minutes: 30 });
     const [clientsList, setClientsList] = useState([]);
-    const [loading, setLoading]     = useState(true);
+    const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
-    const [form, setForm]           = useState(emptyForm);
+    const [payBooking, setPayBooking] = useState(null);
+    const [form, setForm] = useState(emptyForm);
     const [confirmConfig, setConfirmConfig] = useState(null);
 
     useEffect(() => {
-        if (modalOpen) document.body.classList.add('modal-open');
-        else           document.body.classList.remove('modal-open');
+        if (modalOpen || payBooking) document.body.classList.add('modal-open');
+        else document.body.classList.remove('modal-open');
         return () => document.body.classList.remove('modal-open');
-    }, [modalOpen]);
+    }, [modalOpen, payBooking]);
 
     useEffect(() => { loadStatic(); }, []);
     useEffect(() => { loadBookings(); }, [weekStart]);
@@ -74,7 +76,7 @@ export default function AdminBookings() {
         setLoading(true);
         try {
             const date_from = toDateStr(weekStart);
-            const date_to   = toDateStr(addDays(weekStart, 6));
+            const date_to = toDateStr(addDays(weekStart, 6));
             setBookings(await adminBookingsApi.list({ date_from, date_to }));
         } catch { showToast('Ошибка загрузки записей', true); }
         finally { setLoading(false); }
@@ -87,14 +89,17 @@ export default function AdminBookings() {
 
     function openEditModal(b) {
         setForm({
-            id:           b.id,
-            client_name:  b.client_name,
-            client_phone: b.client_phone,
-            barber_id:    b.barber_id || '',
-            date:         b.date,
-            time:         b.time.slice(0, 5),
-            status:       b.status,
-            comment:      b.comment || '',
+            id: b.id,
+            client_name: b.client_name,
+            client_phone: b.client_phone || '',
+            barber_id: b.barber_id || '',
+            service_id: b.service_id || null,
+            price: b.price || 0,
+            date: b.date,
+            time: b.time.slice(0, 5),
+            status: b.status,
+            comment: b.comment || '',
+            total_paid: b.total_paid || 0,
         });
         setModalOpen(true);
     }
@@ -103,18 +108,18 @@ export default function AdminBookings() {
 
     async function handleSave(e) {
         e.preventDefault();
-        if (!form.client_name.trim() || !form.client_phone.trim()) {
-            showToast('Введите имя и телефон клиента', true);
+        if (!form.client_name.trim()) {
+            showToast('Введите имя клиента', true);
             return;
         }
         try {
             const payload = {
-                client_name:  form.client_name.trim(),
-                client_phone: form.client_phone.trim(),
-                barber_id:    form.barber_id || null,
-                date:         form.date,
-                time:         form.time,
-                comment:      form.comment,
+                client_name: form.client_name.trim(),
+                client_phone: form.client_phone ? form.client_phone.trim() : '',
+                barber_id: form.barber_id ? Number(form.barber_id) : null,
+                date: form.date,
+                time: form.time,
+                comment: form.comment,
             };
             if (form.id) {
                 await adminBookingsApi.update(form.id, { ...payload, status: form.status });
@@ -129,14 +134,21 @@ export default function AdminBookings() {
         }
     }
 
-    async function markDone() {
+    function markDone() {
         if (!form.id) return;
-        try {
-            await adminBookingsApi.update(form.id, { status: 'done' });
-            showToast('Отмечено как выполнено');
-            closeModal();
-            navigate('/admin/history?pay=' + form.id);
-        } catch (err) { showToast(err.response?.data?.detail || 'Ошибка', true); }
+        const target = {
+            id: form.id,
+            client_name: form.client_name,
+            client_phone: form.client_phone,
+            barber_id: form.barber_id,
+            service_id: form.service_id,
+            price: form.price,
+            date: form.date,
+            time: form.time,
+            total_paid: form.total_paid,
+        };
+        closeModal();
+        setPayBooking(target);
     }
 
     async function markCancelled() {
@@ -256,12 +268,12 @@ export default function AdminBookings() {
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label>Телефон</label>
+                                    <label>Телефон (необязательно)</label>
                                     <input
                                         className="form-control"
                                         value={form.client_phone}
                                         onChange={(e) => setForm({ ...form, client_phone: e.target.value })}
-                                        required
+                                        placeholder="Необязательно"
                                     />
                                 </div>
                             </div>
@@ -269,8 +281,8 @@ export default function AdminBookings() {
                             {/* Barber */}
                             <div className="form-group">
                                 <label>Барбер</label>
-                                <CustomSelect 
-                                    value={form.barber_id} 
+                                <CustomSelect
+                                    value={form.barber_id}
                                     onChange={(val) => setForm({ ...form, barber_id: val })}
                                     options={[
                                         { value: '', label: 'Не назначен' },
@@ -278,18 +290,6 @@ export default function AdminBookings() {
                                     ]}
                                 />
                             </div>
-
-                            {/* Status (edit only) */}
-                            {form.id && (
-                                <div className="form-group">
-                                    <label>Статус</label>
-                                    <CustomSelect 
-                                        value={form.status} 
-                                        onChange={(val) => setForm({ ...form, status: val })}
-                                        options={CALENDAR_STATUSES.map(({ key, label }) => ({ value: key, label }))}
-                                    />
-                                </div>
-                            )}
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 20 }}>
                                 <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Сохранить</button>
@@ -311,6 +311,19 @@ export default function AdminBookings() {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {/* Payment Modal */}
+            {payBooking && (
+                <PaymentModal
+                    booking={payBooking}
+                    role="admin"
+                    onClose={() => setPayBooking(null)}
+                    onSuccess={() => {
+                        setPayBooking(null);
+                        loadBookings();
+                    }}
+                />
             )}
 
             {confirmConfig && (

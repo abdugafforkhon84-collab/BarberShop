@@ -261,7 +261,7 @@ class BookingOut(BaseModel):
     id: int
     client_id: int
     client_name: str
-    client_phone: str
+    client_phone: Optional[str] = ""
     barber_id: Optional[int] = None
     barber_name: Optional[str] = None
     barber_percent: Optional[float] = None

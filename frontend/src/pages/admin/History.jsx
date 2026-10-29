@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { barbersApi, adminHistoryApi, servicesApi, settingsApi, adminBookingsApi } from '../../api';
 import { useToast } from '../../components/Toast';
 import ConfirmModal from '../../components/ConfirmModal';
+import PaymentModal from '../../components/PaymentModal';
 import CustomSelect from '../../components/CustomSelect';
 import { formatMoney, formatDate } from '../../utils';
 import { 
@@ -455,144 +456,16 @@ export default function AdminHistory() {
 
             {/* Pay Modal */}
             {payModal && (
-                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closePayModal()}>
-                    <div className="modal-box" style={{ maxWidth: 440 }}>
-                        <div className="modal-header">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{
-                                    width: 44, height: 44, borderRadius: 12,
-                                    background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
-                                    border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: 'var(--green)', flexShrink: 0
-                                }}>
-                                    <Wallet size={22} />
-                                </div>
-                                <div>
-                                    <h2 style={{ margin: 0, fontSize: 18 }}>Оплата услуги</h2>
-                                    <div className="modal-subtitle">{payModal.client_name} · Выберите услугу и способ оплаты</div>
-                                </div>
-                            </div>
-                            <button className="modal-close" onClick={closePayModal}><X size={18} /></button>
-                        </div>
-
-                        {/* Services List */}
-                        <div style={{ marginBottom: 20 }}>
-                            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                Основная услуга
-                            </label>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-                                {services.map((s) => (
-                                    <div
-                                        key={s.id}
-                                        onClick={() => setSelectedServiceId(String(s.id))}
-                                        style={{
-                                            padding: '12px 16px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                            border: selectedServiceId === String(s.id) ? '1.5px solid var(--green)' : '1.5px solid var(--border)',
-                                            background: selectedServiceId === String(s.id) ? 'rgba(51,209,122,0.08)' : 'var(--bg-card)',
-                                        }}
-                                    >
-                                        <div style={{ fontWeight: 600, color: selectedServiceId === String(s.id) ? 'var(--green)' : 'var(--text-main)' }}>
-                                            {s.name}
-                                        </div>
-                                        <div style={{ fontWeight: 700, fontSize: 14 }}>{formatMoney(s.price)}</div>
-                                    </div>
-                                ))}
-                                {services.length === 0 && (
-                                    <div style={{ fontSize: 13, color: 'var(--text-muted)', padding: 12, background: 'var(--bg-card)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
-                                        Услуги не настроены. <br/> Добавьте услуги в разделе Настройки.
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Extras Grid */}
-                        <div style={{ marginBottom: 20 }}>
-                            <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                Дополнительно
-                            </label>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                                {EXTRA_SERVICES.map((s) => {
-                                    const active = selectedExtras.includes(s.key);
-                                    const price = settings[s.priceKey] || 0;
-                                    const Icon = s.icon;
-                                    return (
-                                        <div
-                                            key={s.key}
-                                            onClick={() => toggleExtra(s.key)}
-                                            style={{
-                                                padding: '12px 8px', borderRadius: 'var(--radius-md)', cursor: 'pointer', textAlign: 'center',
-                                                border: active ? '1.5px solid var(--green)' : '1.5px solid var(--border)',
-                                                background: active ? 'rgba(51,209,122,0.08)' : 'var(--bg-card)',
-                                                userSelect: 'none', transition: 'all 0.15s'
-                                            }}
-                                        >
-                                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
-                                                <Icon size={20} color={active ? 'var(--green)' : 'var(--text-muted)'} />
-                                            </div>
-                                            <div style={{ fontSize: 11, fontWeight: 600, color: active ? 'var(--green)' : 'var(--text-main)' }}>
-                                                {s.label}
-                                            </div>
-                                            {price > 0 && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>+{price}₸</div>}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Total Display */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--bg-card)', borderRadius: 'var(--radius-md)', marginBottom: 20, border: '1px solid var(--border)' }}>
-                            <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>К оплате</div>
-                            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--green)' }}>
-                                {formatMoney(computeTotal())}
-                            </div>
-                        </div>
-
-                        {/* Payment Methods */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                            <button
-                                type="button"
-                                className="btn"
-                                onClick={() => setPayMethod('cash')}
-                                style={{
-                                    height: 48, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                                    border: payMethod === 'cash' ? '1.5px solid var(--green)' : '1.5px solid var(--border)',
-                                    background: payMethod === 'cash' ? 'rgba(51,209,122,0.1)' : 'var(--bg-card)',
-                                    color: payMethod === 'cash' ? 'var(--green)' : 'var(--text-main)'
-                                }}
-                            >
-                                <Wallet size={18} /> Наличные
-                            </button>
-                            <button
-                                type="button"
-                                className="btn"
-                                onClick={() => setPayMethod('kaspi')}
-                                style={{
-                                    height: 48, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                                    border: payMethod === 'kaspi' ? '1.5px solid var(--green)' : '1.5px solid var(--border)',
-                                    background: payMethod === 'kaspi' ? 'rgba(51,209,122,0.1)' : 'var(--bg-card)',
-                                    color: payMethod === 'kaspi' ? 'var(--green)' : 'var(--text-main)'
-                                }}
-                            >
-                                <CreditCard size={18} /> Kaspi
-                            </button>
-                        </div>
-
-                        {/* Submit */}
-                        <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={handlePay}
-                            disabled={paying || !payMethod || (!selectedServiceId && services.length > 0)}
-                            style={{ width: '100%', height: 48, fontSize: 15, marginTop: 16 }}
-                        >
-                            <Check size={16} /> {paying ? 'Сохранение...' : 'Подтвердить оплату'}
-                        </button>
-                    </div>
-                </div>
+                <PaymentModal
+                    booking={payModal}
+                    role="admin"
+                    onClose={() => setPayModal(null)}
+                    onSuccess={() => {
+                        setPayModal(null);
+                        loadData();
+                    }}
+                />
             )}
-
         </div>
     );
 }

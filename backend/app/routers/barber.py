@@ -91,6 +91,20 @@ def update_own_booking(
     if "extra_services" in data and isinstance(data["extra_services"], list):
         data["extra_services"] = json.dumps(data["extra_services"])
 
+    if "client_name" in data:
+        c_name = data.pop("client_name")
+        if c_name and booking.client:
+            booking.client.name = c_name.strip()
+    if "client_phone" in data:
+        c_phone = data.pop("client_phone")
+        if booking.client:
+            clean_p = (c_phone or "").strip()
+            if clean_p:
+                booking.client.phone = clean_p
+            elif not booking.client.phone or not booking.client.phone.startswith("no-phone-"):
+                import uuid
+                booking.client.phone = f"no-phone-{uuid.uuid4().hex[:8]}"
+
     for field, value in data.items():
         setattr(booking, field, value)
     db.commit()
@@ -176,8 +190,9 @@ def pay_booking(
 ):
     """Mark a booking as paid. If service_id is provided, updates the booking's service too."""
     booking = _own_booking(db, booking_id, current_user.id)
-    if booking.status != models.BookingStatus.done:
-        raise HTTPException(status_code=400, detail="Можно оплатить только выполненный заказ")
+    if booking.status not in (models.BookingStatus.done, models.BookingStatus.confirmed, models.BookingStatus.pending):
+        raise HTTPException(status_code=400, detail="Нельзя оплатить отмененную запись")
+    booking.status = models.BookingStatus.done
 
     # Update service if provided (barber selects service at payment time)
     if payload.service_id:

@@ -41,13 +41,25 @@ def create_booking_record(
 
     client_id = payload.client_id
     if not client_id:
-        if not (payload.client_name and payload.client_phone):
-            raise HTTPException(status_code=400, detail="Укажите клиента (существующего или нового)")
-        existing = db.query(models.Client).filter(models.Client.phone == payload.client_phone).first()
-        if existing:
-            client_id = existing.id
+        if not payload.client_name or not payload.client_name.strip():
+            raise HTTPException(status_code=400, detail="Укажите имя клиента")
+        clean_name = payload.client_name.strip()
+        clean_phone = (payload.client_phone or "").strip()
+        if clean_phone:
+            existing = db.query(models.Client).filter(models.Client.phone == clean_phone).first()
+            if existing:
+                client_id = existing.id
+            else:
+                new_client = models.Client(name=clean_name, phone=clean_phone)
+                db.add(new_client)
+                db.commit()
+                db.refresh(new_client)
+                client_id = new_client.id
         else:
-            new_client = models.Client(name=payload.client_name, phone=payload.client_phone)
+            # Phone is optional
+            import uuid
+            dummy_phone = f"no-phone-{uuid.uuid4().hex[:8]}"
+            new_client = models.Client(name=clean_name, phone=dummy_phone)
             db.add(new_client)
             db.commit()
             db.refresh(new_client)
@@ -84,7 +96,7 @@ def booking_to_out(b: models.Booking) -> schemas.BookingOut:
     except Exception:
         extra = []
     return schemas.BookingOut(
-        id=b.id, client_id=b.client_id, client_name=b.client.name, client_phone=b.client.phone,
+        id=b.id, client_id=b.client_id, client_name=b.client.name, client_phone=("" if (not b.client.phone or b.client.phone.startswith("no-phone-")) else b.client.phone),
         barber_id=b.barber_id, barber_name=b.barber.full_name if b.barber else None,
         barber_percent=b.barber.barber_percent if b.barber else None,
         service_id=b.service_id, service_name=b.service.name if b.service else None,

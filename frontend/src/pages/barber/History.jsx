@@ -19,6 +19,7 @@ import { barberApi, barberBookingsApi } from '../../api';
 import { useToast } from '../../components/Toast';
 import CustomSelect from '../../components/CustomSelect';
 import ConfirmModal from '../../components/ConfirmModal';
+import PaymentModal from '../../components/PaymentModal';
 
 const STATUS_LABELS = {
     pending: 'Ожидает', confirmed: 'Принято',
@@ -297,118 +298,15 @@ export default function BarberHistory() {
 
             {/* ───── Payment modal ───── */}
             {payModal && (
-                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closePayModal()}>
-                    <div className="modal-box">
-                        <div className="modal-header">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{
-                                    width: 44, height: 44, borderRadius: 12,
-                                    background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
-                                    border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: 'var(--green)', flexShrink: 0
-                                }}>
-                                    <Wallet size={22} />
-                                </div>
-                                <div>
-                                    <h2 style={{ margin: 0, fontSize: 18 }}>Оплата услуги</h2>
-                                    <div className="modal-subtitle">{payModal.client_name} · {fmtDate(payModal.date)} {fmtTime(payModal.time)}</div>
-                                </div>
-                            </div>
-                            <button className="modal-close" onClick={closePayModal}><X size={18} /></button>
-                        </div>
-
-                        {/* ── Service selector ── */}
-                        {services.length > 0 && (
-                            <div className="form-group">
-                                <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-main)', marginBottom: 8 }}>
-                                    Выберите услугу
-                                </label>
-                                <CustomSelect 
-                                    value={selectedServiceId}
-                                    onChange={(val) => setSelectedServiceId(val)}
-                                    options={[
-                                        { value: '', label: '— не выбрано —' },
-                                        ...services.map(s => ({ value: s.id, label: `${s.name} — ${s.price} ₸` }))
-                                    ]}
-                                />
-                            </div>
-                        )}
-
-                        {/* ── Extra services ── */}
-                        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10, fontWeight: 600 }}>
-                            Дополнительные услуги:
-                        </div>
-                        <div className="service-checklist">
-                            {EXTRA_SERVICES.map((svc) => {
-                                const isSelected = selectedExtras.includes(svc.key);
-                                const price = shopSettings[svc.priceKey] || 0;
-                                const Icon = svc.icon;
-                                return (
-                                    <div
-                                        key={svc.key}
-                                        className={`service-check-item ${isSelected ? 'selected' : ''}`}
-                                        onClick={() => toggleExtra(svc.key)}
-                                    >
-                                        <div className="sci-left">
-                                            <span className="sci-emoji"><Icon size={17} color={isSelected ? 'var(--green)' : 'var(--text-muted)'} /></span>
-                                            <span className="sci-name">{svc.name}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <span className="sci-price">+{price} ₸</span>
-                                            <div className="check-box">
-                                                {isSelected && <Check size={14} color="#06180f" strokeWidth={3} />}
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* ── Total + commission ── */}
-                        <div className="pay-total">{total.toLocaleString('ru-RU')} ₸</div>
-                        {commission != null && (
-                            <div className="pay-commission">
-                                Ваш заработок ({payModal.barber_percent}%): <span>{commission.toLocaleString('ru-RU')} ₸</span>
-                            </div>
-                        )}
-
-                        {/* ── Payment method ── */}
-                        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10, fontWeight: 600 }}>
-                            Способ оплаты
-                        </div>
-                        <div className="payment-method-row">
-                            <button
-                                type="button"
-                                className={`pay-method-btn ${payMethod === 'phone' ? 'active' : ''}`}
-                                onClick={() => setPayMethod('phone')}
-                            >
-                                <span className="pm-icon"><Smartphone size={22} /></span>
-                                Kaspi
-                            </button>
-                            <button
-                                type="button"
-                                className={`pay-method-btn ${payMethod === 'cash' ? 'active' : ''}`}
-                                onClick={() => setPayMethod('cash')}
-                            >
-                                <span className="pm-icon"><Banknote size={22} /></span>
-                                Наличка
-                            </button>
-                        </div>
-
-                        <div className="modal-actions">
-                            <button
-                                className="btn btn-primary"
-                                style={{ flex: 1 }}
-                                onClick={handlePay}
-                                disabled={paying || !payMethod}
-                            >
-                                {paying ? 'Обработка...' : `Принять оплату — ${total.toLocaleString('ru-RU')} ₸`}
-                            </button>
-                            <button className="btn btn-outline" onClick={closePayModal}>Отмена</button>
-                        </div>
-                    </div>
-                </div>
+                <PaymentModal
+                    booking={payModal}
+                    role="barber"
+                    onClose={() => setPayModal(null)}
+                    onSuccess={() => {
+                        setPayModal(null);
+                        load();
+                    }}
+                />
             )}
 
             {/* Confirm Cancel Modal */}

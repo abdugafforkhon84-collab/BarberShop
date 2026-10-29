@@ -18,6 +18,7 @@ import { X, Search, Calendar as CalIcon, Clock, User } from 'lucide-react';
 import { barberApi, barberBookingsApi, sharedSettingsApi } from '../../api';
 import { useToast } from '../../components/Toast';
 import ConfirmModal from '../../components/ConfirmModal';
+import PaymentModal from '../../components/PaymentModal';
 import WeeklyCalendar, { getWeekStart } from '../../components/WeeklyCalendar';
 
 function toDateStr(d) { return d.toISOString().slice(0, 10); }
@@ -50,6 +51,7 @@ export default function BarberCalendar() {
 
     // modal state
     const [modal, setModal] = useState(null); // null | { mode:'create'|'view', booking?, date?, time? }
+    const [payBooking, setPayBooking] = useState(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
     // Create form state
@@ -63,10 +65,10 @@ export default function BarberCalendar() {
 
     // Body scroll lock
     useEffect(() => {
-        if (modal) document.body.classList.add('modal-open');
-        else       document.body.classList.remove('modal-open');
+        if (modal || payBooking) document.body.classList.add('modal-open');
+        else                     document.body.classList.remove('modal-open');
         return () => document.body.classList.remove('modal-open');
-    }, [modal]);
+    }, [modal, payBooking]);
 
     useEffect(() => { loadStatic(); }, []);
     useEffect(() => { loadBookings(); }, [weekStart]);
@@ -131,22 +133,17 @@ export default function BarberCalendar() {
             clientName  = selectedClient.name;
             clientPhone = selectedClient.phone;
         } else {
-            if (!newName.trim() || !newPhone.trim()) {
-                showToast('Введите имя и телефон клиента', true); return;
+            if (!newName.trim()) {
+                showToast('Введите имя клиента', true); return;
             }
-            try {
-                const created = await barberApi.createClient({ name: newName.trim(), phone: newPhone.trim() });
-                clientName  = created.name;
-                clientPhone = created.phone;
-            } catch (err) {
-                showToast(err.response?.data?.detail || 'Ошибка создания клиента', true); return;
-            }
+            clientName  = newName.trim();
+            clientPhone = newPhone.trim();
         }
 
         try {
             await barberBookingsApi.create({
                 client_name:  clientName,
-                client_phone: clientPhone,
+                client_phone: clientPhone || undefined,
                 date:         modal.date,
                 time:         modal.time,
             });
@@ -158,13 +155,9 @@ export default function BarberCalendar() {
         }
     }
 
-    async function markDone(bookingId) {
-        try {
-            await barberApi.complete(bookingId);
-            showToast('Отмечено как выполнено ✓');
-            closeModal();
-            navigate('/barber/history?pay=' + bookingId);
-        } catch (err) { showToast(err.response?.data?.detail || 'Ошибка', true); }
+    function markDone(booking) {
+        closeModal();
+        setPayBooking(booking);
     }
 
     async function markAccept(bookingId) {
@@ -366,13 +359,13 @@ export default function BarberCalendar() {
                                         />
                                     </div>
                                     <div className="form-group">
-                                        <label>Телефон</label>
+                                        <label>Телефон (необязательно)</label>
                                         <input
                                             className="form-control"
                                             value={newPhone}
                                             onChange={(e) => setNewPhone(e.target.value)}
                                             type="tel"
-                                            required
+                                            placeholder="Необязательно"
                                         />
                                     </div>
                                 </>
@@ -445,7 +438,7 @@ export default function BarberCalendar() {
                                 {b.status === 'pending' && (
                                     <button className="btn btn-primary" onClick={() => markAccept(b.id)}>Принять</button>
                                 )}
-                                <button className="btn btn-success" onClick={() => markDone(b.id)}>Выполнено ✓</button>
+                                <button className="btn btn-success" onClick={() => markDone(b)}>Выполнено ✓</button>
                                 <button className="btn btn-danger btn-sm" onClick={() => handleDelete(b.id)}>Удалить</button>
                                 <button className="btn btn-outline" onClick={closeModal}>Закрыть</button>
                             </div>
@@ -461,6 +454,19 @@ export default function BarberCalendar() {
                         )}
                     </div>
                 </div>
+            )}
+
+            {/* Payment Modal */}
+            {payBooking && (
+                <PaymentModal
+                    booking={payBooking}
+                    role="barber"
+                    onClose={() => setPayBooking(null)}
+                    onSuccess={() => {
+                        setPayBooking(null);
+                        loadBookings();
+                    }}
+                />
             )}
 
             {/* Confirm Delete Modal */}
