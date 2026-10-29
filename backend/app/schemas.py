@@ -114,6 +114,12 @@ class TenantOut(BaseModel):
     branches: Optional[List[dict]] = None
 
 
+class TariffItem(BaseModel):
+    months: int = Field(ge=1, le=12)
+    price: float = Field(ge=0)
+    name: Optional[str] = None
+
+
 class TariffSettingsOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -121,6 +127,8 @@ class TariffSettingsOut(BaseModel):
     price_3_months: float = 15000.0
     price_6_months: float = 27000.0
     price_12_months: float = 48000.0
+    tariffs: List[TariffItem] = []
+    tariffs_json: Optional[str] = "[]"
     updated_at: datetime
 
 
@@ -129,6 +137,8 @@ class TariffSettingsUpdate(BaseModel):
     price_3_months: Optional[float] = Field(default=None, ge=0)
     price_6_months: Optional[float] = Field(default=None, ge=0)
     price_12_months: Optional[float] = Field(default=None, ge=0)
+    tariffs: Optional[List[TariffItem]] = None
+    tariffs_json: Optional[str] = None
 
 
 

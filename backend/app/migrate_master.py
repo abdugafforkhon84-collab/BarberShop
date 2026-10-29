@@ -27,6 +27,13 @@ def migrate_master_db():
                 cur.execute(f"ALTER TABLE tenants ADD COLUMN {col} {col_def}")
                 print(f"  Added tenants.{col}")
 
+        # Check platform_tariff_settings
+        cur.execute("PRAGMA table_info(platform_tariff_settings)")
+        existing_tariff_cols = {row[1] for row in cur.fetchall()}
+        if existing_tariff_cols and "tariffs_json" not in existing_tariff_cols:
+            cur.execute("ALTER TABLE platform_tariff_settings ADD COLUMN tariffs_json TEXT DEFAULT '[]'")
+            print("  Added platform_tariff_settings.tariffs_json")
+
         conn.commit()
         conn.close()
         print("Master DB migration completed successfully.")

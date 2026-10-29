@@ -23,6 +23,7 @@ reports. Those live in a database this router never opens.
 ------------------------------------------------------------
 """
 from datetime import date, timedelta
+import json
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -40,14 +41,25 @@ router = APIRouter(prefix="/superadmin", tags=["superadmin"], dependencies=[Depe
 
 def _get_or_create_tariff_settings(db: Session) -> PlatformTariffSettings:
     settings = db.query(PlatformTariffSettings).first()
+    default_tariffs = [
+        {"months": 1, "price": 0.0, "name": "1 месяц (Пробный)"},
+        {"months": 3, "price": 15000.0, "name": "3 месяца"},
+        {"months": 6, "price": 27000.0, "name": "6 месяцев"},
+        {"months": 12, "price": 48000.0, "name": "12 месяцев (1 год)"},
+    ]
     if not settings:
         settings = PlatformTariffSettings(
             price_1_month=0.0,
             price_3_months=15000.0,
             price_6_months=27000.0,
             price_12_months=48000.0,
+            tariffs_json=json.dumps(default_tariffs, ensure_ascii=False),
         )
         db.add(settings)
+        db.commit()
+        db.refresh(settings)
+    elif not settings.tariffs_json or settings.tariffs_json.strip() in ("", "[]"):
+        settings.tariffs_json = json.dumps(default_tariffs, ensure_ascii=False)
         db.commit()
         db.refresh(settings)
     return settings
@@ -77,6 +89,13 @@ def _get_plan_price(months: Optional[int], settings: PlatformTariffSettings, cus
         return custom_price, (months == 1 and custom_price == 0.0)
     if not months:
         return 0.0, False
+
+    # Check dynamic tariffs first
+    for t in settings.tariffs:
+        if t.get("months") == months:
+            price = float(t.get("price", 0.0))
+            return price, (months == 1 and price == 0.0)
+
     if months == 1:
         return settings.price_1_month, (settings.price_1_month == 0.0)
     elif months == 3:
@@ -97,9 +116,42 @@ def get_tariff_settings(db: Session = Depends(get_master_db)):
 def update_tariff_settings(payload: schemas.TariffSettingsUpdate, db: Session = Depends(get_master_db)):
     settings = _get_or_create_tariff_settings(db)
     data = payload.model_dump(exclude_unset=True)
-    for field, val in data.items():
-        if val is not None:
-            setattr(settings, field, val)
+
+    if "tariffs" in data and data["tariffs"] is not None:
+        tariffs_list = sorted(data["tariffs"], key=lambda x: x["months"])
+        settings.tariffs_json = json.dumps(tariffs_list, ensure_ascii=False)
+        # Sync standard fixed columns for backwards compatibility
+        for t in tariffs_list:
+            m = t.get("months")
+            p = float(t.get("price", 0.0))
+            if m == 1:
+                settings.price_1_month = p
+            elif m == 3:
+                settings.price_3_months = p
+            elif m == 6:
+                settings.price_6_months = p
+            elif m == 12:
+                settings.price_12_months = p
+    elif "tariffs_json" in data and data["tariffs_json"] is not None:
+        settings.tariffs_json = data["tariffs_json"]
+
+    # Also handle individual price updates if explicitly provided
+    for field in ("price_1_month", "price_3_months", "price_6_months", "price_12_months"):
+        if field in data and data[field] is not None:
+            setattr(settings, field, data[field])
+            try:
+                curr_tariffs = json.loads(settings.tariffs_json or "[]")
+                month_num = int(field.split("_")[1])
+                updated = False
+                for item in curr_tariffs:
+                    if item.get("months") == month_num:
+                        item["price"] = data[field]
+                        updated = True
+                if updated:
+                    settings.tariffs_json = json.dumps(curr_tariffs, ensure_ascii=False)
+            except Exception:
+                pass
+
     db.commit()
     db.refresh(settings)
     return settings

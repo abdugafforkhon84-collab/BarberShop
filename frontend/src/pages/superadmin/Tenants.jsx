@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, KeyRound, Power, Trash2, X, Copy, Check, MapPin, RefreshCw, User, Phone, Coins, Settings2, Sparkles, Building2, Eye, EyeOff } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
@@ -62,6 +63,7 @@ function MapClickHandler({ onLocationSelect }) {
 
 export default function SuperadminTenants() {
     const showToast = useToast();
+    const navigate = useNavigate();
     const [tenants, setTenants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -72,15 +74,13 @@ export default function SuperadminTenants() {
     const [copiedId, setCopiedId] = useState(null);
     const [confirmConfig, setConfirmConfig] = useState(null);
 
-    // Tariff Prices Settings Modal
-    const [tariffModalOpen, setTariffModalOpen] = useState(false);
     const [tariffPrices, setTariffPrices] = useState({
         price_1_month: 0,
         price_3_months: 15000,
         price_6_months: 27000,
         price_12_months: 48000,
+        tariffs: []
     });
-    const [savingTariffs, setSavingTariffs] = useState(false);
 
     // Password reset modal
     const [passwordTenant, setPasswordTenant] = useState(null);
@@ -88,10 +88,10 @@ export default function SuperadminTenants() {
     const [showAdminPassword, setShowAdminPassword] = useState(false);
 
     useEffect(() => {
-        const open = modalOpen || !!renewModal || tariffModalOpen || !!passwordTenant;
+        const open = modalOpen || !!renewModal || !!passwordTenant;
         document.body.classList.toggle('modal-open', open);
         return () => document.body.classList.remove('modal-open');
-    }, [modalOpen, renewModal, tariffModalOpen, passwordTenant]);
+    }, [modalOpen, renewModal, passwordTenant]);
 
     useEffect(() => { load(); }, []);
 
@@ -135,21 +135,6 @@ export default function SuperadminTenants() {
             load();
         } catch (err) {
             showToast(err.response?.data?.detail || 'Ошибка сохранения', true);
-        }
-    }
-
-    async function handleSaveTariffs(e) {
-        e.preventDefault();
-        setSavingTariffs(true);
-        try {
-            const updated = await superadminApi.updateTariffSettings(tariffPrices);
-            setTariffPrices(updated);
-            showToast('Цены на тарифы сохранены ✓');
-            setTariffModalOpen(false);
-        } catch (err) {
-            showToast(err.response?.data?.detail || 'Ошибка сохранения цен', true);
-        } finally {
-            setSavingTariffs(false);
         }
     }
 
@@ -221,10 +206,17 @@ export default function SuperadminTenants() {
     }
 
     function getTariffPriceDisplay(months) {
-        if (months === 1) return tariffPrices.price_1_month > 0 ? formatMoney(tariffPrices.price_1_month) : 'Бесплатно (Пробный)';
-        if (months === 3) return formatMoney(tariffPrices.price_3_months);
-        if (months === 6) return formatMoney(tariffPrices.price_6_months);
-        if (months === 12) return formatMoney(tariffPrices.price_12_months);
+        const m = Number(months);
+        if (tariffPrices?.tariffs && tariffPrices.tariffs.length > 0) {
+            const match = tariffPrices.tariffs.find(t => t.months === m);
+            if (match) {
+                return match.price === 0 ? 'Бесплатно (Пробный)' : formatMoney(match.price);
+            }
+        }
+        if (m === 1) return tariffPrices.price_1_month > 0 ? formatMoney(tariffPrices.price_1_month) : 'Бесплатно (Пробный)';
+        if (m === 3) return formatMoney(tariffPrices.price_3_months);
+        if (m === 6) return formatMoney(tariffPrices.price_6_months);
+        if (m === 12) return formatMoney(tariffPrices.price_12_months);
         return '— (Укажите свою цену)';
     }
 
@@ -246,9 +238,9 @@ export default function SuperadminTenants() {
                         type="button"
                         className="btn btn-outline"
                         style={{ height: 42, padding: '0 16px', display: 'flex', alignItems: 'center', gap: 8 }}
-                        onClick={() => setTariffModalOpen(true)}
+                        onClick={() => navigate('/superadmin/tariffs')}
                     >
-                        <Settings2 size={16} /> Настроить цены тарифов
+                        <Settings2 size={16} /> Настроить тарифы
                     </button>
                     <button className="btn btn-primary" style={{ height: 42 }} onClick={openCreate}>
                         <Plus size={16} /> Добавить барбершоп
@@ -354,88 +346,6 @@ export default function SuperadminTenants() {
                 })}
             </div>
 
-            {/* Tariff Prices Modal */}
-            {tariffModalOpen && (
-                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setTariffModalOpen(false)}>
-                    <div className="modal-box" style={{ maxWidth: 440 }}>
-                        <div className="modal-header">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{
-                                    width: 44, height: 44, borderRadius: 12,
-                                    background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
-                                    border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: 'var(--green)', flexShrink: 0
-                                }}>
-                                    <Coins size={22} />
-                                </div>
-                                <div>
-                                    <h2 style={{ margin: 0, fontSize: 18 }}>Цены на тарифы</h2>
-                                    <div className="modal-subtitle">Стоимость периодов подписки для заведений</div>
-                                </div>
-                            </div>
-                            <button className="modal-close" onClick={() => setTariffModalOpen(false)}><X size={18} /></button>
-                        </div>
-
-                        <form onSubmit={handleSaveTariffs}>
-                            <div className="form-group">
-                                <label>1 месяц (Пробный период)</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    value={tariffPrices.price_1_month}
-                                    onChange={(e) => setTariffPrices({ ...tariffPrices, price_1_month: Number(e.target.value) })}
-                                    min="0"
-                                />
-                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                                    Укажите 0 ₸ чтобы предоставить 1 месяц как бесплатный пробный тариф
-                                </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label>3 месяца (₸)</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    value={tariffPrices.price_3_months}
-                                    onChange={(e) => setTariffPrices({ ...tariffPrices, price_3_months: Number(e.target.value) })}
-                                    min="0"
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>6 месяцев (₸)</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    value={tariffPrices.price_6_months}
-                                    onChange={(e) => setTariffPrices({ ...tariffPrices, price_6_months: Number(e.target.value) })}
-                                    min="0"
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>12 месяцев (1 год) (₸)</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    value={tariffPrices.price_12_months}
-                                    onChange={(e) => setTariffPrices({ ...tariffPrices, price_12_months: Number(e.target.value) })}
-                                    min="0"
-                                />
-                            </div>
-
-                            <div className="modal-actions" style={{ marginTop: 20 }}>
-                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={savingTariffs}>
-                                    {savingTariffs ? 'Сохранение...' : 'Сохранить цены'}
-                                </button>
-                                <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setTariffModalOpen(false)}>Отмена</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
             {/* Create modal */}
             {modalOpen && (
                 <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closeModal()}>
@@ -523,16 +433,50 @@ export default function SuperadminTenants() {
                             )}
 
                             {/* Subscription plan */}
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Срок подписки (мес)</label>
-                                    <input type="number" className="form-control" value={form.plan_months} onChange={(e) => setForm({ ...form, plan_months: e.target.value })} min="1" required />
-                                </div>
-                                <div className="form-group">
-                                    <label>Своя цена (₸) — опционально</label>
-                                    <input type="number" className="form-control" value={form.custom_price} onChange={(e) => setForm({ ...form, custom_price: e.target.value })} min="0" />
-                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                                        Оставьте пустым, чтобы использовать стандартную цену за {form.plan_months || 0} мес: {getTariffPriceDisplay(Number(form.plan_months))}
+                            <div className="form-group" style={{ marginBottom: 14 }}>
+                                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span>Срок подписки</span>
+                                    <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>
+                                        {getTariffPriceDisplay(Number(form.plan_months))}
+                                    </span>
+                                </label>
+                                {tariffPrices?.tariffs && tariffPrices.tariffs.length > 0 && (
+                                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                                        {tariffPrices.tariffs.map((tar) => (
+                                            <button
+                                                key={tar.months}
+                                                type="button"
+                                                className={`btn btn-sm ${Number(form.plan_months) === tar.months ? 'btn-primary' : 'btn-outline'}`}
+                                                style={{ fontSize: 11, padding: '4px 10px', borderRadius: 999 }}
+                                                onClick={() => setForm({ ...form, plan_months: tar.months, custom_price: '' })}
+                                            >
+                                                {tar.name || `${tar.months} мес`} {tar.price === 0 ? '(0 ₸)' : `(${formatMoney(tar.price)})`}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="form-row">
+                                    <div className="form-group" style={{ margin: 0 }}>
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            value={form.plan_months}
+                                            onChange={(e) => setForm({ ...form, plan_months: e.target.value })}
+                                            min="1"
+                                            max="12"
+                                            placeholder="Срок (мес)"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="form-group" style={{ margin: 0 }}>
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            value={form.custom_price}
+                                            onChange={(e) => setForm({ ...form, custom_price: e.target.value })}
+                                            min="0"
+                                            placeholder="Своя цена (₸) — опционально"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -577,14 +521,35 @@ export default function SuperadminTenants() {
                             )}
                         </div>
 
+                        {tariffPrices?.tariffs && tariffPrices.tariffs.length > 0 && (
+                            <div style={{ marginBottom: 14 }}>
+                                <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>
+                                    Выберите тариф для продления:
+                                </label>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                    {tariffPrices.tariffs.map((tar) => (
+                                        <button
+                                            key={tar.months}
+                                            type="button"
+                                            className={`btn btn-sm ${Number(renewMonths) === tar.months ? 'btn-primary' : 'btn-outline'}`}
+                                            style={{ fontSize: 11, padding: '4px 10px', borderRadius: 999 }}
+                                            onClick={() => { setRenewMonths(tar.months); setRenewCustomPrice(''); }}
+                                        >
+                                            {tar.name || `${tar.months} мес`} {tar.price === 0 ? '(0 ₸)' : `(${formatMoney(tar.price)})`}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="form-row">
                             <div className="form-group">
                                 <label>Срок продления (мес)</label>
-                                <input type="number" className="form-control" value={renewMonths} onChange={(e) => setRenewMonths(e.target.value)} min="1" required />
+                                <input type="number" className="form-control" value={renewMonths} onChange={(e) => setRenewMonths(e.target.value)} min="1" max="12" required />
                             </div>
                             <div className="form-group">
                                 <label>Своя цена (₸) — опционально</label>
-                                <input type="number" className="form-control" value={renewCustomPrice} onChange={(e) => setRenewCustomPrice(e.target.value)} min="0" />
+                                <input type="number" className="form-control" value={renewCustomPrice} onChange={(e) => setRenewCustomPrice(e.target.value)} min="0" placeholder="По умолчанию" />
                             </div>
                         </div>
 

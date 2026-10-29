@@ -24,7 +24,7 @@ nothing but provisioning/routing metadata:
 """
 from datetime import datetime, date
 
-from sqlalchemy import Boolean, Column, DateTime, Date, Float, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Date, Float, Integer, String, Text
 
 from .master_database import MasterBase
 
@@ -80,7 +80,23 @@ class PlatformTariffSettings(MasterBase):
     price_3_months = Column(Float, default=15000.0, nullable=False)  # 3 months
     price_6_months = Column(Float, default=27000.0, nullable=False)  # 6 months
     price_12_months = Column(Float, default=48000.0, nullable=False) # 12 months
+    tariffs_json = Column(Text, nullable=True, default="[]") # Dynamic tariffs for 1-12 months
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @property
+    def tariffs(self):
+        import json
+        try:
+            if self.tariffs_json and self.tariffs_json.strip() not in ("", "[]"):
+                return json.loads(self.tariffs_json)
+        except Exception:
+            pass
+        return [
+            {"months": 1, "price": self.price_1_month, "name": "1 месяц (Пробный)" if self.price_1_month == 0 else "1 месяц"},
+            {"months": 3, "price": self.price_3_months, "name": "3 месяца"},
+            {"months": 6, "price": self.price_6_months, "name": "6 месяцев"},
+            {"months": 12, "price": self.price_12_months, "name": "12 месяцев (1 год)"},
+        ]
 
 
 class LoginIndex(MasterBase):
