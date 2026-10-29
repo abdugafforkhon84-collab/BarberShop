@@ -6,7 +6,7 @@
  * ------------------------------------------------------------
  */
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, X, Wallet, DollarSign } from 'lucide-react';
+import { Plus, Trash2, X, Wallet, DollarSign, LayoutGrid, List } from 'lucide-react';
 import { paymentsApi, barbersApi } from '../../api';
 import { useToast } from '../../components/Toast';
 import CustomSelect from '../../components/CustomSelect';
@@ -26,6 +26,14 @@ export default function AdminPayments() {
     const [modalOpen, setModalOpen] = useState(false);
     const [deletePaymentId, setDeletePaymentId] = useState(null);
     const [form, setForm] = useState(emptyForm);
+    const [viewMode, setViewMode] = useState(() => {
+        return localStorage.getItem('barberpro_payments_view') || 'grid';
+    });
+
+    function handleViewChange(mode) {
+        setViewMode(mode);
+        localStorage.setItem('barberpro_payments_view', mode);
+    }
 
     useEffect(() => { load(); }, []);
 
@@ -100,10 +108,69 @@ export default function AdminPayments() {
 
             {!loading && (
                 <>
-                    <h2 style={{ fontSize: 18, marginBottom: 16 }}>Балансы сотрудников</h2>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                        <h2 style={{ fontSize: 18, margin: 0 }}>Балансы сотрудников</h2>
+
+                        {/* View Switcher: Card vs List */}
+                        <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            background: 'var(--bg-card)',
+                            border: '1px solid var(--border)',
+                            borderRadius: 8,
+                            padding: 3,
+                            gap: 2
+                        }}>
+                            <button
+                                type="button"
+                                onClick={() => handleViewChange('grid')}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 5,
+                                    padding: '5px 9px',
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    border: 'none',
+                                    borderRadius: 6,
+                                    cursor: 'pointer',
+                                    background: viewMode === 'grid' ? 'var(--green)' : 'transparent',
+                                    color: viewMode === 'grid' ? '#fff' : 'var(--text-muted)',
+                                    transition: 'all 0.15s ease'
+                                }}
+                                title="Отображение карточками"
+                            >
+                                <LayoutGrid size={14} />
+                                <span>Карточки</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleViewChange('list')}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 5,
+                                    padding: '5px 9px',
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    border: 'none',
+                                    borderRadius: 6,
+                                    cursor: 'pointer',
+                                    background: viewMode === 'list' ? 'var(--green)' : 'transparent',
+                                    color: viewMode === 'list' ? '#fff' : 'var(--text-muted)',
+                                    transition: 'all 0.15s ease'
+                                }}
+                                title="Отображение списком"
+                            >
+                                <List size={14} />
+                                <span>Список</span>
+                            </button>
+                        </div>
+                    </div>
+
                     {balances.length === 0 ? (
                         <p className="empty-state">Нет активных сотрудников</p>
-                    ) : (
+                    ) : viewMode === 'grid' ? (
                         <div className="grid grid-3" style={{ marginBottom: 32 }}>
                             {balances.map(b => (
                                 <div className="card" key={b.barber_id}>
@@ -140,12 +207,67 @@ export default function AdminPayments() {
                                 </div>
                             ))}
                         </div>
+                    ) : (
+                        <div className="card" style={{ padding: 0, overflow: 'hidden', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', marginBottom: 32 }}>
+                            <div style={{ overflowX: 'auto' }}>
+                                <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)', textAlign: 'left' }}>
+                                            <th style={{ padding: '12px 16px', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)' }}>Сотрудник</th>
+                                            <th style={{ padding: '12px 16px', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)' }}>Ставка</th>
+                                            <th style={{ padding: '12px 16px', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)' }}>Заработано</th>
+                                            <th style={{ padding: '12px 16px', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)' }}>Выплачено</th>
+                                            <th style={{ padding: '12px 16px', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)' }}>К выплате (Долг)</th>
+                                            <th style={{ padding: '12px 16px', textAlign: 'right' }}></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {balances.map(b => (
+                                            <tr key={b.barber_id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                                <td style={{ padding: '12px 16px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                        <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)', color: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
+                                                            {(b.barber_name || 'М')[0].toUpperCase()}
+                                                        </div>
+                                                        <div style={{ fontWeight: 600, fontSize: 14 }}>
+                                                            {b.barber_name}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)' }}>
+                                                    {b.barber_percent}%
+                                                </td>
+                                                <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600 }}>
+                                                    {formatMoney(b.total_earned)}
+                                                </td>
+                                                <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600 }}>
+                                                    {formatMoney(b.total_paid)}
+                                                </td>
+                                                <td style={{ padding: '12px 16px', fontSize: 16, fontWeight: 800, color: b.balance > 0 ? 'var(--status-cancelled)' : 'var(--text-main)' }}>
+                                                    {formatMoney(b.balance)}
+                                                </td>
+                                                <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                                                    <button 
+                                                        className="btn btn-sm btn-primary" 
+                                                        onClick={() => openModal(b.barber_id, b.balance)}
+                                                        disabled={b.balance <= 0}
+                                                        style={{ padding: '6px 14px' }}
+                                                    >
+                                                        Выплатить
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     )}
 
                     <h2 style={{ fontSize: 18, marginBottom: 16 }}>История выплат</h2>
                     {payments.length === 0 ? (
                         <p className="empty-state">Выплат пока нет</p>
-                    ) : (
+                    ) : viewMode === 'grid' ? (
                         <div className="grid grid-3">
                             {payments.map((p) => (
                                 <div className="card" key={p.id}>
@@ -163,6 +285,51 @@ export default function AdminPayments() {
                                     <button className="btn btn-sm btn-danger" style={{ marginTop: 10 }} onClick={() => remove(p.id)}><Trash2 size={14} /> Отменить</button>
                                 </div>
                             ))}
+                        </div>
+                    ) : (
+                        <div className="card" style={{ padding: 0, overflow: 'hidden', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+                            <div style={{ overflowX: 'auto' }}>
+                                <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)', textAlign: 'left' }}>
+                                            <th style={{ padding: '12px 16px', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)' }}>Сотрудник</th>
+                                            <th style={{ padding: '12px 16px', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)' }}>Период</th>
+                                            <th style={{ padding: '12px 16px', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)' }}>Сумма</th>
+                                            <th style={{ padding: '12px 16px', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)' }}>Статус</th>
+                                            <th style={{ padding: '12px 16px', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)' }}>Комментарий</th>
+                                            <th style={{ padding: '12px 16px', textAlign: 'right' }}></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {payments.map(p => (
+                                            <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                                <td style={{ padding: '12px 16px', fontWeight: 600, fontSize: 14 }}>
+                                                    {p.barber_name}
+                                                </td>
+                                                <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                                    {formatDate(p.period_from)} — {formatDate(p.period_to)}
+                                                </td>
+                                                <td style={{ padding: '12px 16px', fontSize: 15, fontWeight: 700, color: 'var(--green)' }}>
+                                                    {formatMoney(p.amount)}
+                                                </td>
+                                                <td style={{ padding: '12px 16px' }}>
+                                                    <span className={`badge ${p.status === 'paid' ? 'badge-done' : 'badge-pending'}`}>
+                                                        {p.status === 'paid' ? 'Выплачено' : 'Ожидает'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-dim)' }}>
+                                                    {p.comment || '—'}
+                                                </td>
+                                                <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                                                    <button className="btn btn-sm btn-danger" onClick={() => remove(p.id)} style={{ padding: '4px 10px' }}>
+                                                        <Trash2 size={13} /> Отменить
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
                 </>
