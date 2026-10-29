@@ -8,6 +8,14 @@
     <link rel="icon" type="image/png" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>BarberPro</title>
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem('barberpro_theme') || 'dark';
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {}
+        })();
+    </script>
 </head>
 <body>
     <div id="root"></div>

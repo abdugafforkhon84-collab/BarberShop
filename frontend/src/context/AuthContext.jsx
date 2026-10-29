@@ -7,7 +7,7 @@
  * 'admin' (a barbershop's own admin), 'barber'.
  * ------------------------------------------------------------
  */
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { authApi } from '../api';
 
 const AuthContext = createContext(null);
@@ -17,18 +17,20 @@ export function AuthProvider({ children }) {
     const [role, setRole] = useState(() => localStorage.getItem('barberpro_role'));
     const [fullName, setFullName] = useState(() => localStorage.getItem('barberpro_name'));
     const [shopName, setShopName] = useState(() => localStorage.getItem('barberpro_shop'));
-    const [shopTheme, setShopThemeState] = useState(() => localStorage.getItem('barberpro_theme'));
+    const [shopTheme, setShopThemeState] = useState(() => localStorage.getItem('barberpro_theme') || 'dark');
     const [shopType, setShopType] = useState(() => localStorage.getItem('barberpro_shop_type'));
 
     const setShopTheme = useCallback((theme) => {
-        setShopThemeState(theme);
-        if (theme) {
-            localStorage.setItem('barberpro_theme', theme);
-            document.documentElement.setAttribute('data-theme', theme);
-        } else {
-            localStorage.removeItem('barberpro_theme');
-            document.documentElement.setAttribute('data-theme', 'dark');
-        }
+        const next = theme || 'dark';
+        setShopThemeState(next);
+        localStorage.setItem('barberpro_theme', next);
+        document.documentElement.setAttribute('data-theme', next);
+    }, []);
+
+    // Apply saved theme immediately on mount
+    useEffect(() => {
+        const saved = localStorage.getItem('barberpro_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', saved);
     }, []);
 
     const login = useCallback(async (loginValue, password) => {
@@ -39,30 +41,34 @@ export function AuthProvider({ children }) {
         if (data.shop_name) localStorage.setItem('barberpro_shop', data.shop_name);
         else localStorage.removeItem('barberpro_shop');
         
-        if (data.theme) localStorage.setItem('barberpro_theme', data.theme);
         if (data.shop_type) localStorage.setItem('barberpro_shop_type', data.shop_type);
+
+        // Preserve user's explicitly selected theme or adopt tenant default
+        const existingLocalTheme = localStorage.getItem('barberpro_theme');
+        const themeToApply = existingLocalTheme || data.theme || 'dark';
+        localStorage.setItem('barberpro_theme', themeToApply);
+        document.documentElement.setAttribute('data-theme', themeToApply);
 
         setToken(data.access_token);
         setRole(data.role);
         setFullName(data.full_name);
         setShopName(data.shop_name || null);
-        setShopTheme(data.theme || 'dark');
+        setShopTheme(themeToApply);
         setShopType(data.shop_type || 'barbershop');
         return data;
-    }, []);
+    }, [setShopTheme]);
 
     const logout = useCallback(() => {
         localStorage.removeItem('barberpro_token');
         localStorage.removeItem('barberpro_role');
         localStorage.removeItem('barberpro_name');
         localStorage.removeItem('barberpro_shop');
-        localStorage.removeItem('barberpro_theme');
+        // DO NOT remove barberpro_theme! The user's theme selection remains saved permanently.
         localStorage.removeItem('barberpro_shop_type');
         setToken(null);
         setRole(null);
         setFullName(null);
         setShopName(null);
-        setShopTheme(null);
         setShopType(null);
     }, []);
 
@@ -74,17 +80,21 @@ export function AuthProvider({ children }) {
         if (data.shop_name) localStorage.setItem('barberpro_shop', data.shop_name);
         else localStorage.removeItem('barberpro_shop');
         
-        if (data.theme) localStorage.setItem('barberpro_theme', data.theme);
         if (data.shop_type) localStorage.setItem('barberpro_shop_type', data.shop_type);
+
+        const existingLocalTheme = localStorage.getItem('barberpro_theme');
+        const themeToApply = existingLocalTheme || data.theme || 'dark';
+        localStorage.setItem('barberpro_theme', themeToApply);
+        document.documentElement.setAttribute('data-theme', themeToApply);
 
         setToken(data.access_token);
         setRole(data.role);
         setFullName(data.full_name);
         setShopName(data.shop_name || null);
-        setShopTheme(data.theme || 'dark');
+        setShopTheme(themeToApply);
         setShopType(data.shop_type || 'barbershop');
         return data;
-    }, []);
+    }, [setShopTheme]);
 
     const value = {
         token,
