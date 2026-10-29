@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Scissors, User, Lock, Eye, EyeOff, Palette, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -25,8 +25,13 @@ export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [activeTheme, setActiveTheme] = useState(() => localStorage.getItem('barberpro_theme') || shopTheme || 'dark');
 
-    const activeTheme = localStorage.getItem('barberpro_theme') || shopTheme || 'dark';
+    useEffect(() => {
+        const saved = localStorage.getItem('barberpro_theme') || shopTheme || 'dark';
+        setActiveTheme(saved);
+        document.documentElement.setAttribute('data-theme', saved);
+    }, [shopTheme]);
 
     if (isAuthenticated) {
         return <Navigate to={HOME_BY_ROLE[role] || '/login'} replace />;
@@ -47,6 +52,7 @@ export default function Login() {
     }
 
     function cycleTheme(nextTheme) {
+        setActiveTheme(nextTheme);
         localStorage.setItem('barberpro_theme', nextTheme);
         document.documentElement.setAttribute('data-theme', nextTheme);
         if (setShopTheme) setShopTheme(nextTheme);

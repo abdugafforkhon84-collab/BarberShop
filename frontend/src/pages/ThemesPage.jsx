@@ -94,19 +94,14 @@ export default function ThemesPage() {
     const showToast = useToast();
     const { role, shopName, shopTheme, setShopTheme } = useAuth();
 
-    const [savedTheme, setSavedTheme] = useState(() => {
+    const [currentTheme, setCurrentTheme] = useState(() => {
         return localStorage.getItem('barberpro_theme') || shopTheme || 'dark';
     });
-    const [selectedTheme, setSelectedTheme] = useState(() => {
-        return localStorage.getItem('barberpro_theme') || shopTheme || 'dark';
-    });
-    const [saving, setSaving] = useState(false);
     const [salonSettings, setSalonSettings] = useState(null);
 
     useEffect(() => {
         const active = localStorage.getItem('barberpro_theme') || shopTheme || 'dark';
-        setSavedTheme(active);
-        setSelectedTheme(active);
+        setCurrentTheme(active);
         document.documentElement.setAttribute('data-theme', active);
 
         if (role === 'admin') {
@@ -114,66 +109,56 @@ export default function ThemesPage() {
         }
     }, [shopTheme, role]);
 
-    function handlePreviewTheme(themeId) {
-        setSelectedTheme(themeId);
+    async function handleSelectTheme(themeId) {
+        setCurrentTheme(themeId);
+        
+        // 1. Immediately apply to HTML document
         document.documentElement.setAttribute('data-theme', themeId);
-    }
-
-    async function handleSaveTheme(themeId) {
-        const target = themeId || selectedTheme;
-        setSaving(true);
-        try {
-            // 1. Save locally so it stays permanently on this device/browser
-            localStorage.setItem('barberpro_theme', target);
-            if (shopName) {
-                localStorage.setItem(`barberpro_theme_${role}_${shopName}`, target);
-            }
-            document.documentElement.setAttribute('data-theme', target);
-            if (setShopTheme) {
-                setShopTheme(target);
-            }
-            setSavedTheme(target);
-            setSelectedTheme(target);
-
-            // 2. If admin, automatically persist to salon settings in DB
-            if (role === 'admin' && salonSettings) {
-                const updated = await settingsApi.update({
-                    ...salonSettings,
-                    theme: target
-                });
-                setSalonSettings(updated);
-            }
-
-            const t = THEMES.find(item => item.id === target);
-            showToast(`✓ Тема «${t ? t.name : target}» сохранена навсегда!`);
-        } catch (err) {
-            console.error(err);
-            showToast('Тема сохранена на устройстве');
-        } finally {
-            setSaving(false);
+        
+        // 2. Persist locally to localStorage forever
+        localStorage.setItem('barberpro_theme', themeId);
+        if (shopName) {
+            localStorage.setItem(`barberpro_theme_${role}_${shopName}`, themeId);
         }
-    }
 
-    function handleCancelPreview() {
-        setSelectedTheme(savedTheme);
-        document.documentElement.setAttribute('data-theme', savedTheme);
+        // 3. Update React context
+        if (setShopTheme) {
+            setShopTheme(themeId);
+        }
+
+        // 4. If admin, automatically persist to salon settings in backend database
+        if (role === 'admin') {
+            try {
+                const currentSettings = salonSettings || await settingsApi.get().catch(() => null);
+                if (currentSettings) {
+                    const updated = await settingsApi.update({
+                        ...currentSettings,
+                        theme: themeId
+                    });
+                    setSalonSettings(updated);
+                }
+            } catch (err) {
+                console.error('Failed to sync theme to DB:', err);
+            }
+        }
+
+        const t = THEMES.find(item => item.id === themeId);
+        showToast(`✓ Тема «${t ? t.name : themeId}» сохранена навсегда!`);
     }
 
     function handleBack() {
-        // Restore saved theme if user leaves without saving
-        document.documentElement.setAttribute('data-theme', savedTheme);
         if (role === 'admin') {
             navigate('/admin/settings');
         } else if (role === 'barber') {
             navigate('/barber/settings');
+        } else if (role === 'superadmin') {
+            navigate('/superadmin/tenants');
         } else {
             navigate(-1);
         }
     }
 
-    const isDirty = selectedTheme !== savedTheme;
-    const currentThemeObj = THEMES.find(t => t.id === selectedTheme) || THEMES[0];
-    const savedThemeObj = THEMES.find(t => t.id === savedTheme) || THEMES[0];
+    const currentThemeObj = THEMES.find(t => t.id === currentTheme) || THEMES[0];
 
     return (
         <div style={{ maxWidth: 840, margin: '0 auto', paddingBottom: 60 }}>
@@ -188,237 +173,87 @@ export default function ThemesPage() {
                     <span>Назад</span>
                 </button>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 6,
-                        padding: '6px 14px', 
-                        borderRadius: 999, 
-                        background: isDirty ? 'rgba(234, 179, 8, 0.15)' : 'var(--green-glow)', 
-                        color: isDirty ? '#eab308' : 'var(--green)',
-                        fontWeight: 600,
-                        fontSize: 12,
-                        border: isDirty ? '1px solid rgba(234, 179, 8, 0.3)' : '1px solid var(--border)'
-                    }}>
-                        <Palette size={14} />
-                        <span>{isDirty ? `Предпросмотр: ${currentThemeObj.name}` : `Сохранено: ${savedThemeObj.name}`}</span>
-                    </div>
-
-                    {isDirty && (
-                        <button
-                            className="btn btn-primary"
-                            onClick={() => handleSaveTheme(selectedTheme)}
-                            disabled={saving}
-                            style={{ 
-                                padding: '6px 14px', 
-                                fontSize: 12, 
-                                fontWeight: 700, 
-                                gap: 6, 
-                                display: 'inline-flex', 
-                                alignItems: 'center',
-                                boxShadow: '0 4px 14px var(--green-glow)'
-                            }}
-                        >
-                            <Save size={14} />
-                            <span>{saving ? 'Сохранение...' : 'Сохранить'}</span>
-                        </button>
-                    )}
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 6,
+                    padding: '6px 14px', 
+                    borderRadius: 999, 
+                    background: 'var(--green-glow)', 
+                    color: 'var(--green)',
+                    fontWeight: 600,
+                    fontSize: 12,
+                    border: '1px solid var(--border)'
+                }}>
+                    <Palette size={14} />
+                    <span>Активно: {currentThemeObj.name}</span>
                 </div>
             </div>
 
-            <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 20 }}>
                 <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
                     <Palette size={26} color="var(--green)" />
                     <span>Темы оформления</span>
                 </h1>
                 <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.5, margin: 0 }}>
-                    Выберите цветовую тему интерфейса. После нажатия «Сохранить» цвет закрепляется навсегда и не сбрасывается при выходе или перезагрузке.
+                    Нажмите на любую тему — она сохранится автоматически и навсегда. Выбранный цвет не сбросится при перезагрузке, переходе по страницам или выходе из системы.
                 </p>
             </div>
 
-            {/* Persistent Save Notification Banner when dirty */}
-            {isDirty ? (
-                <div style={{ 
-                    background: 'var(--bg-card)', 
-                    border: '2px solid var(--green)', 
-                    borderRadius: 14, 
-                    padding: '14px 20px', 
-                    marginBottom: 24,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: 12,
-                    boxShadow: '0 8px 30px var(--green-glow)',
-                    animation: 'fadeUp 0.25s ease'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ 
-                            width: 38, 
-                            height: 38, 
-                            borderRadius: '50%', 
-                            background: 'var(--green-glow)', 
-                            color: 'var(--green)',
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center' 
-                        }}>
-                            <Sparkles size={20} />
-                        </div>
-                        <div>
-                            <div style={{ fontWeight: 800, fontSize: 14 }}>
-                                Выбрана новая тема: «{currentThemeObj.name}»
-                            </div>
-                            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                                Нажмите «Сохранить тему», чтобы зафиксировать её навсегда на всех устройствах.
-                            </div>
-                        </div>
+            {/* Permanent Auto-Saved Status Banner */}
+            <div style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: 14,
+                padding: '14px 18px',
+                marginBottom: 24,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 12
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        background: 'var(--green-glow)',
+                        color: 'var(--green)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                    }}>
+                        <CheckCircle2 size={20} />
                     </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <button
-                            type="button"
-                            className="btn btn-outline"
-                            onClick={handleCancelPreview}
-                            style={{ fontSize: 12, padding: '8px 14px', gap: 6, display: 'inline-flex', alignItems: 'center' }}
-                        >
-                            <RotateCcw size={14} />
-                            <span>Отменить</span>
-                        </button>
-                        <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={() => handleSaveTheme(selectedTheme)}
-                            disabled={saving}
-                            style={{ 
-                                fontSize: 13, 
-                                padding: '8px 20px', 
-                                fontWeight: 700, 
-                                gap: 6, 
-                                display: 'inline-flex', 
-                                alignItems: 'center',
-                                boxShadow: '0 4px 16px var(--green-glow)'
-                            }}
-                        >
-                            <Save size={15} />
-                            <span>{saving ? 'Сохранение...' : 'Сохранить тему навсегда'}</span>
-                        </button>
+                    <div>
+                        <div style={{ fontWeight: 700, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <span>Текущая тема:</span>
+                            <strong style={{ color: 'var(--green)' }}>{currentThemeObj.name}</strong>
+                            <span className="badge badge-done" style={{ fontSize: 10 }}>✓ Сохранено навсегда</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                            Цвет зафиксирован на этом устройстве. При каждом входе интерфейс сразу откроется в этой теме.
+                            {role === 'admin' && ' В базе данных салона также установлено как значение по умолчанию.'}
+                        </div>
                     </div>
                 </div>
-            ) : (
-                /* Reassuring Permanent Saved State Banner */
-                <div style={{
-                    background: 'var(--bg-card)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 14,
-                    padding: '12px 18px',
-                    marginBottom: 24,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: 12
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 10,
-                            background: 'var(--green-glow)',
-                            color: 'var(--green)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            <CheckCircle2 size={20} />
-                        </div>
-                        <div>
-                            <div style={{ fontWeight: 700, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span>Тема сохранена и активна:</span>
-                                <strong style={{ color: 'var(--green)' }}>{savedThemeObj.name}</strong>
-                            </div>
-                            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                                Этот цвет сохранён в вашем профиле и будет использоваться автоматически.
-                                {role === 'admin' && ' В базе данных салона установлена как стандартная.'}
-                            </div>
-                        </div>
-                    </div>
-
-                    <button
-                        type="button"
-                        className="btn btn-outline"
-                        onClick={() => handleSaveTheme(savedTheme)}
-                        disabled={saving}
-                        style={{ fontSize: 12, padding: '7px 14px', gap: 6, display: 'inline-flex', alignItems: 'center' }}
-                        title="Принудительно перезаписать сохранение"
-                    >
-                        <Check size={14} />
-                        <span>{saving ? 'Сохранение...' : 'Зафиксировано'}</span>
-                    </button>
-                </div>
-            )}
-
-            {/* Admin Salon Default Sync Banner */}
-            {role === 'admin' && salonSettings && (
-                <div className="card" style={{ 
-                    marginBottom: 24, 
-                    padding: '14px 18px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: 12,
-                    border: '1px solid var(--border)',
-                    background: 'var(--bg-card)'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ 
-                            width: 36, 
-                            height: 36, 
-                            borderRadius: 10, 
-                            background: 'var(--green-glow)', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            color: 'var(--green)'
-                        }}>
-                            <Building2 size={18} />
-                        </div>
-                        <div>
-                            <div style={{ fontWeight: 700, fontSize: 13.5 }}>Тема салона «{shopName || 'BarberPro'}»</div>
-                            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                                Базовая тема для всех устройств: <strong>{THEMES.find(t => t.id === (salonSettings?.theme || 'dark'))?.name || 'Тёмный сапфир'}</strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button
-                        className="btn btn-primary"
-                        onClick={() => handleSaveTheme(selectedTheme)}
-                        disabled={saving || (salonSettings?.theme === savedTheme && !isDirty)}
-                        style={{ fontSize: 12, padding: '7px 16px', gap: 6, display: 'inline-flex', alignItems: 'center' }}
-                    >
-                        <Save size={14} />
-                        <span>{saving ? 'Сохранение...' : salonSettings?.theme === savedTheme && !isDirty ? '✓ Синхронизировано' : 'Сохранить для всего салона'}</span>
-                    </button>
-                </div>
-            )}
+            </div>
 
             {/* Themes Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18, marginBottom: 30 }}>
                 {THEMES.map((theme) => {
-                    const isCurrent = selectedTheme === theme.id;
-                    const isPermanentlySaved = savedTheme === theme.id;
+                    const isSelected = currentTheme === theme.id;
                     const IconComponent = theme.icon;
 
                     return (
                         <div 
                             key={theme.id}
-                            onClick={() => handlePreviewTheme(theme.id)}
+                            onClick={() => handleSelectTheme(theme.id)}
                             style={{
                                 background: 'var(--bg-card)',
-                                border: isCurrent ? '2px solid var(--green)' : '1px solid var(--border)',
+                                border: isSelected ? '2px solid var(--green)' : '1px solid var(--border)',
                                 borderRadius: 16,
                                 padding: 20,
                                 cursor: 'pointer',
@@ -427,13 +262,13 @@ export default function ThemesPage() {
                                 flexDirection: 'column',
                                 justifyContent: 'space-between',
                                 transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                                boxShadow: isCurrent ? '0 12px 32px var(--green-glow)' : 'var(--shadow-card)',
-                                transform: isCurrent ? 'translateY(-2px)' : 'none',
+                                boxShadow: isSelected ? '0 12px 32px var(--green-glow)' : 'var(--shadow-card)',
+                                transform: isSelected ? 'translateY(-2px)' : 'none',
                                 overflow: 'hidden'
                             }}
                         >
                             {/* Selected Check Badge */}
-                            {isCurrent && (
+                            {isSelected && (
                                 <div style={{
                                     position: 'absolute',
                                     top: 14,
@@ -441,8 +276,8 @@ export default function ThemesPage() {
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: 4,
-                                    background: isPermanentlySaved ? 'var(--green)' : '#eab308',
-                                    color: isPermanentlySaved ? '#fff' : '#000',
+                                    background: 'var(--green)',
+                                    color: '#fff',
                                     padding: '4px 10px',
                                     borderRadius: 999,
                                     fontSize: 11,
@@ -450,7 +285,7 @@ export default function ThemesPage() {
                                     boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
                                 }}>
                                     <Check size={12} strokeWidth={3} />
-                                    <span>{isPermanentlySaved ? 'Сохранено' : 'Выбрано'}</span>
+                                    <span>Активно</span>
                                 </div>
                             )}
 
@@ -561,10 +396,10 @@ export default function ThemesPage() {
                                 </div>
                             </div>
 
-                            {/* Select / Save Action Button */}
+                            {/* Select Action Button */}
                             <button
                                 type="button"
-                                className={`btn ${isPermanentlySaved ? 'btn-primary' : isCurrent ? 'btn-primary' : 'btn-outline'}`}
+                                className={`btn ${isSelected ? 'btn-primary' : 'btn-outline'}`}
                                 style={{
                                     width: '100%',
                                     minHeight: 38,
@@ -578,24 +413,18 @@ export default function ThemesPage() {
                                 }}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    handleSaveTheme(theme.id);
+                                    handleSelectTheme(theme.id);
                                 }}
-                                disabled={saving}
                             >
-                                {isPermanentlySaved ? (
+                                {isSelected ? (
                                     <>
                                         <Check size={14} strokeWidth={3} />
-                                        <span>✓ Сохранено навсегда</span>
-                                    </>
-                                ) : isCurrent ? (
-                                    <>
-                                        <Save size={14} />
-                                        <span>Сохранить эту тему</span>
+                                        <span>✓ Активно и сохранено</span>
                                     </>
                                 ) : (
                                     <>
                                         <Palette size={14} />
-                                        <span>Выбрать и сохранить</span>
+                                        <span>Выбрать тему</span>
                                     </>
                                 )}
                             </button>

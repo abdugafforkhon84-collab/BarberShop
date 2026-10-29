@@ -59,17 +59,21 @@ export function AuthProvider({ children }) {
     }, [setShopTheme]);
 
     const logout = useCallback(() => {
+        const currentTheme = localStorage.getItem('barberpro_theme') || 'dark';
         localStorage.removeItem('barberpro_token');
         localStorage.removeItem('barberpro_role');
         localStorage.removeItem('barberpro_name');
         localStorage.removeItem('barberpro_shop');
-        // DO NOT remove barberpro_theme! The user's theme selection remains saved permanently.
         localStorage.removeItem('barberpro_shop_type');
+        // DO NOT remove barberpro_theme! The user's theme selection remains saved permanently.
+        localStorage.setItem('barberpro_theme', currentTheme);
+        document.documentElement.setAttribute('data-theme', currentTheme);
         setToken(null);
         setRole(null);
         setFullName(null);
         setShopName(null);
         setShopType(null);
+        setShopThemeState(currentTheme);
     }, []);
 
     const switchBranch = useCallback(async (slug) => {
