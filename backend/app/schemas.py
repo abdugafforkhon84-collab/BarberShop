@@ -321,6 +321,7 @@ class SettingsUpdate(BaseModel):
     currency: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+    kaspi_phone: Optional[str] = None
     price_hair_wash: Optional[float] = None
     price_beard: Optional[float] = None
     price_mask: Optional[float] = None
@@ -338,6 +339,7 @@ class SettingsOut(BaseModel):
     currency: str
     phone: Optional[str] = None
     address: Optional[str] = None
+    kaspi_phone: Optional[str] = ''
     price_hair_wash: float = 500.0
     price_beard: float = 1000.0
     price_mask: float = 800.0

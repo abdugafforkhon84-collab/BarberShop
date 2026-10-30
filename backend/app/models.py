@@ -147,6 +147,7 @@ class Settings(Base):
     currency = Column(String(10), nullable=False, default="₸")
     phone = Column(String(30), nullable=True)
     address = Column(String(255), nullable=True)
+    kaspi_phone = Column(String(30), nullable=True, default='')
 
     # UI Theme & Terminology
     theme = Column(String(20), nullable=False, default="dark")  # dark, light, green, blue

@@ -9,7 +9,10 @@ import {
     CreditCard, 
     RotateCcw,
     Clock,
-    User
+    User,
+    Copy,
+    Smartphone,
+    Banknote
 } from 'lucide-react';
 import { servicesApi, sharedSettingsApi, adminBookingsApi, barberApi } from '../api';
 import { formatMoney, formatDate } from '../utils';
@@ -455,6 +458,99 @@ export default function PaymentModal({ booking, onClose, onSuccess, role = 'admi
                                     <CreditCard size={15} /> Карта
                                 </button>
                             </div>
+
+                            {/* Kaspi Phone Details Card */}
+                            {payMethod === 'kaspi' && (
+                                <div style={{
+                                    marginTop: 12,
+                                    padding: '12px 14px',
+                                    borderRadius: 'var(--radius-md)',
+                                    background: 'rgba(239, 68, 68, 0.08)',
+                                    border: '1.5px solid rgba(239, 68, 68, 0.3)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: 12,
+                                    animation: 'fadeUp 0.15s ease'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <div style={{
+                                            width: 36, height: 36, borderRadius: 10,
+                                            background: '#f14635', color: '#fff',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontWeight: 800, fontSize: 15, flexShrink: 0,
+                                            boxShadow: '0 4px 12px rgba(241, 70, 53, 0.35)'
+                                        }}>
+                                            K
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>
+                                                Kaspi перевод на номер:
+                                            </div>
+                                            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.02em', marginTop: 1 }}>
+                                                {settings.kaspi_phone || 'Номер не указан в настройках'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {settings.kaspi_phone && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (navigator.clipboard) {
+                                                    navigator.clipboard.writeText(settings.kaspi_phone);
+                                                    showToast('Номер Kaspi скопирован ✓');
+                                                }
+                                            }}
+                                            className="btn btn-sm btn-outline"
+                                            style={{ height: 32, fontSize: 11, padding: '0 10px', gap: 4, flexShrink: 0, background: 'var(--bg-card)' }}
+                                        >
+                                            <Copy size={12} /> Скопировать
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Cash Info Card */}
+                            {payMethod === 'cash' && (
+                                <div style={{
+                                    marginTop: 12,
+                                    padding: '10px 14px',
+                                    borderRadius: 'var(--radius-md)',
+                                    background: 'rgba(var(--green-rgb, 74, 222, 128), 0.08)',
+                                    border: '1.5px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    color: 'var(--green)',
+                                    animation: 'fadeUp 0.15s ease'
+                                }}>
+                                    <Banknote size={16} />
+                                    <span>Оплата наличными средствами в кассу</span>
+                                </div>
+                            )}
+
+                            {/* Card Info Card */}
+                            {payMethod === 'card' && (
+                                <div style={{
+                                    marginTop: 12,
+                                    padding: '10px 14px',
+                                    borderRadius: 'var(--radius-md)',
+                                    background: 'rgba(59, 130, 246, 0.08)',
+                                    border: '1.5px solid rgba(59, 130, 246, 0.25)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    color: '#60a5fa',
+                                    animation: 'fadeUp 0.15s ease'
+                                }}>
+                                    <CreditCard size={16} />
+                                    <span>Оплата банковской картой через POS-терминал</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Submit & Cancel Actions */}

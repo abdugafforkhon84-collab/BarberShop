@@ -359,6 +359,8 @@ def platform_overview(db: Session = Depends(get_master_db)):
             "plan_status": plan_status,
             "plan_end": str(t.plan_end) if t.plan_end else None,
             "plan_months": t.plan_months,
+            "subscription_price": t.subscription_price or 0.0,
+            "is_trial": bool(t.is_trial),
             "barbers": barbers,
             "total_bookings": total_bookings,
             "done_bookings": done_bookings,
@@ -376,6 +378,7 @@ def platform_overview(db: Session = Depends(get_master_db)):
         "total_barbers": sum(s["barbers"] for s in shops),
         "total_bookings": sum(s["total_bookings"] for s in shops),
         "total_revenue": sum(s["revenue"] for s in shops),
+        "total_tariffs_paid": sum(s["subscription_price"] for s in shops),
         "today_bookings": sum(s["today_bookings"] for s in shops),
     }
 

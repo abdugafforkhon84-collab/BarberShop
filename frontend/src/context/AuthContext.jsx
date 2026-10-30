@@ -3,8 +3,7 @@
  * ------------------------------------------------------------
  * Holds the logged-in user's token/role/name/shop in memory +
  * localStorage so a page refresh doesn't log the user out.
- * Three possible roles: 'superadmin' (platform owner),
- * 'admin' (a barbershop's own admin), 'barber'.
+ * Includes 4-digit PIN lock support for fast, seamless login.
  * ------------------------------------------------------------
  */
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
@@ -19,6 +18,16 @@ export function AuthProvider({ children }) {
     const [shopName, setShopName] = useState(() => localStorage.getItem('barberpro_shop'));
     const [shopTheme, setShopThemeState] = useState(() => localStorage.getItem('barberpro_theme') || 'dark');
     const [shopType, setShopType] = useState(() => localStorage.getItem('barberpro_shop_type'));
+
+    // PIN lock states
+    const [hasPin, setHasPin] = useState(() => Boolean(localStorage.getItem('barberpro_pin')));
+    const [isLocked, setIsLocked] = useState(() => {
+        const t = localStorage.getItem('barberpro_token');
+        const p = localStorage.getItem('barberpro_pin');
+        const u = sessionStorage.getItem('barberpro_unlocked');
+        return Boolean(t && p && !u);
+    });
+    const [needsPinSetup, setNeedsPinSetup] = useState(false);
 
     const setShopTheme = useCallback((theme) => {
         const next = theme || 'dark';
@@ -55,8 +64,49 @@ export function AuthProvider({ children }) {
         setShopName(data.shop_name || null);
         setShopTheme(themeToApply);
         setShopType(data.shop_type || 'barbershop');
+
+        // Check if 4-digit PIN is already configured
+        const existingPin = localStorage.getItem('barberpro_pin');
+        if (!existingPin) {
+            setNeedsPinSetup(true);
+        } else {
+            sessionStorage.setItem('barberpro_unlocked', 'true');
+            setIsLocked(false);
+        }
+
         return data;
     }, [setShopTheme]);
+
+    const unlock = useCallback((enteredPin) => {
+        const savedPin = localStorage.getItem('barberpro_pin');
+        if (enteredPin === savedPin) {
+            sessionStorage.setItem('barberpro_unlocked', 'true');
+            setIsLocked(false);
+            return true;
+        }
+        return false;
+    }, []);
+
+    const setPin = useCallback((newPin) => {
+        localStorage.setItem('barberpro_pin', newPin);
+        sessionStorage.setItem('barberpro_unlocked', 'true');
+        setHasPin(true);
+        setIsLocked(false);
+        setNeedsPinSetup(false);
+    }, []);
+
+    const removePin = useCallback(() => {
+        localStorage.removeItem('barberpro_pin');
+        sessionStorage.removeItem('barberpro_unlocked');
+        setHasPin(false);
+        setIsLocked(false);
+        setNeedsPinSetup(false);
+    }, []);
+
+    const skipPinSetup = useCallback(() => {
+        sessionStorage.setItem('barberpro_unlocked', 'true');
+        setNeedsPinSetup(false);
+    }, []);
 
     const logout = useCallback(() => {
         const currentTheme = localStorage.getItem('barberpro_theme') || 'dark';
@@ -65,14 +115,19 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('barberpro_name');
         localStorage.removeItem('barberpro_shop');
         localStorage.removeItem('barberpro_shop_type');
+        sessionStorage.removeItem('barberpro_unlocked');
+        
         // DO NOT remove barberpro_theme! The user's theme selection remains saved permanently.
         localStorage.setItem('barberpro_theme', currentTheme);
         document.documentElement.setAttribute('data-theme', currentTheme);
+        
         setToken(null);
         setRole(null);
         setFullName(null);
         setShopName(null);
         setShopType(null);
+        setIsLocked(false);
+        setNeedsPinSetup(false);
         setShopThemeState(currentTheme);
     }, []);
 
@@ -113,6 +168,14 @@ export function AuthProvider({ children }) {
         isSuperAdmin: role === 'superadmin',
         isAdmin: role === 'admin',
         isBarber: role === 'barber',
+        // PIN Lock API
+        hasPin,
+        isLocked,
+        needsPinSetup,
+        unlock,
+        setPin,
+        removePin,
+        skipPinSetup,
         login,
         logout,
         switchBranch,

@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
 import { settingsApi, adminBranchesApi } from '../../api';
 import { useToast } from '../../components/Toast';
-import { Building2, ShieldCheck, Coins, Palette, Users, Wallet, Scissors, History, LogOut, User, Save, Clock, Phone, MapPin, Sparkles, Map, ChevronRight } from 'lucide-react';
+import { Building2, ShieldCheck, Coins, Palette, Users, Wallet, Scissors, History, LogOut, User, Save, Clock, Phone, MapPin, Sparkles, Map, ChevronRight, CreditCard, KeyRound } from 'lucide-react';
+import PinScreen from '../../components/PinScreen';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AdminSettings() {
     const showToast = useToast();
     const navigate = useNavigate();
-    const { logout, fullName, role, shopName, shopType, setShopTheme, setShopType, switchBranch } = useAuth();
+    const { logout, fullName, role, shopName, shopType, setShopTheme, setShopType, switchBranch, hasPin, removePin } = useAuth();
     const [form, setForm] = useState(null);
     const [saving, setSaving] = useState(false);
     const [branches, setBranches] = useState([]);
+    const [pinModalMode, setPinModalMode] = useState(null);
 
     function handleLogout() {
         logout();
@@ -431,6 +433,104 @@ export default function AdminSettings() {
                         {saving ? 'Сохранение...' : 'Сохранить изменения'}
                     </button>
                 </form>
+
+                {/* Payment Methods & Kaspi */}
+                <form onSubmit={handleSave} className="card" style={{ marginBottom: 16, padding: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 16, marginBottom: 16, color: 'var(--text-main)' }}>
+                        <CreditCard size={18} color="var(--accent)" />
+                        <span>Способы оплаты и Kaspi перевод</span>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 14 }}>
+                        <label className="field-label">Номер Kaspi для оплаты (Kaspi Gold / Kaspi Pay)</label>
+                        <input
+                            className="input"
+                            value={form.kaspi_phone || ''}
+                            onChange={(e) => setForm({ ...form, kaspi_phone: e.target.value })}
+                            placeholder="+7 777 123 45 67"
+                        />
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.4 }}>
+                            Этот номер автоматически отображается в окне оплаты при завершении стрижки/услуги, чтобы клиент мог быстро перевести оплату на Kaspi. Также поддерживается оплата наличными.
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={saving}
+                        style={{ marginTop: 12, height: 42, padding: '0 24px', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                    >
+                        <Save size={16} />
+                        {saving ? 'Сохранение...' : 'Сохранить способ оплаты'}
+                    </button>
+                </form>
+
+                {/* PIN Code Security Card */}
+                <div className="card" style={{ marginBottom: 24, padding: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 16, color: 'var(--text-main)' }}>
+                            <KeyRound size={18} color="var(--accent)" />
+                            <span>Быстрый вход по ПИН-коду (4 цифры)</span>
+                        </div>
+                        <span className={`badge ${hasPin ? 'badge-done' : 'badge-cancelled'}`}>
+                            {hasPin ? 'Активен' : 'Не установлен'}
+                        </span>
+                    </div>
+
+                    <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.5 }}>
+                        {hasPin
+                            ? 'ПИН-код настроен. При повторном входе в приложение не нужно каждый раз вводить логин и пароль — достаточно набрать 4 цифры.'
+                            : 'Придумайте 4 цифры, чтобы мгновенно разблокировать приложение на этом устройстве без повторного ввода логина и пароля.'}
+                    </p>
+
+                    <div style={{ display: 'flex', gap: 10 }}>
+                        {hasPin ? (
+                            <>
+                                <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    onClick={() => setPinModalMode('change')}
+                                    style={{ height: 38, fontSize: 13 }}
+                                >
+                                    Изменить ПИН-код
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    onClick={() => {
+                                        if (window.confirm('Отключить быстрый вход по ПИН-коду?')) {
+                                            removePin();
+                                            showToast('ПИН-код отключён');
+                                        }
+                                    }}
+                                    style={{ height: 38, fontSize: 13, color: 'var(--status-cancelled)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                                >
+                                    Отключить
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={() => setPinModalMode('setup')}
+                                style={{ height: 38, fontSize: 13 }}
+                            >
+                                Установить 4-значный ПИН-код
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {pinModalMode && (
+                    <PinScreen
+                        mode={pinModalMode}
+                        onComplete={() => {
+                            setPinModalMode(null);
+                            showToast('ПИН-код успешно настроен ✓');
+                        }}
+                        onCancel={() => setPinModalMode(null)}
+                    />
+                )}
         </div>
     );
 }

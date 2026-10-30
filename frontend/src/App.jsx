@@ -5,12 +5,14 @@
  * platform owner only, /admin/* is a shop admin only, /barber/*
  * is a barber only (enforced by ProtectedRoute + the backend's
  * own per-role, per-tenant checks).
+ * Includes 4-digit PIN lock screen and setup overlay.
  * ------------------------------------------------------------
  */
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useEffect } from 'react';
 
 import ProtectedRoute from './components/ProtectedRoute';
+import PinScreen from './components/PinScreen';
 import { useAuth } from './context/AuthContext';
 
 import Login from './pages/Login';
@@ -46,87 +48,111 @@ const HOME_BY_ROLE = {
 };
 
 export default function App() {
-    const { isAuthenticated, role, shopTheme } = useAuth();
+    const { 
+        isAuthenticated, 
+        role, 
+        shopTheme, 
+        isLocked, 
+        needsPinSetup, 
+        skipPinSetup, 
+        logout 
+    } = useAuth();
 
     useEffect(() => {
         const activeTheme = localStorage.getItem('barberpro_theme') || shopTheme || 'dark';
         document.documentElement.setAttribute('data-theme', activeTheme);
     }, [isAuthenticated, shopTheme]);
 
+    // 1. If authenticated but locked by 4-digit PIN: show Unlock PIN Screen
+    if (isAuthenticated && isLocked) {
+        return <PinScreen mode="unlock" onLogout={logout} />;
+    }
+
     return (
-        <Routes>
-            <Route path="/login" element={<Login />} />
+        <>
+            {/* 2. If authenticated and needs 4-digit PIN setup right after login */}
+            {isAuthenticated && !isLocked && needsPinSetup && (
+                <PinScreen 
+                    mode="setup" 
+                    onComplete={() => skipPinSetup()} 
+                    onCancel={skipPinSetup} 
+                />
+            )}
 
-            <Route
-                path="/superadmin"
-                element={
-                    <ProtectedRoute allow="superadmin">
-                        <SuperadminLayout />
-                    </ProtectedRoute>
-                }
-            >
-                <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<SuperadminDashboard />} />
-                <Route path="tenants" element={<SuperadminTenants />} />
-                <Route path="tariffs" element={<SuperadminTariffs />} />
-            </Route>
+            <Routes>
+                <Route path="/login" element={<Login />} />
 
-            <Route
-                path="/admin"
-                element={
-                    <ProtectedRoute allow="admin">
-                        <AdminLayout />
-                    </ProtectedRoute>
-                }
-            >
-                <Route index element={<Navigate to="bookings" replace />} />
-                <Route path="bookings" element={<AdminBookings />} />
-                <Route path="clients" element={<AdminClients />} />
-                <Route path="history" element={<AdminHistory />} />
-                <Route path="barbers" element={<AdminBarbers />} />
-                <Route path="reports" element={<AdminReports />} />
-                <Route path="payments" element={<AdminPayments />} />
-                <Route path="services" element={<AdminServices />} />
-                <Route path="settings" element={<AdminSettings />} />
-                <Route path="themes" element={<ThemesPage />} />
-            </Route>
+                <Route
+                    path="/superadmin"
+                    element={
+                        <ProtectedRoute allow="superadmin">
+                            <SuperadminLayout />
+                        </ProtectedRoute>
+                    }
+                >
+                    <Route index element={<Navigate to="dashboard" replace />} />
+                    <Route path="dashboard" element={<SuperadminDashboard />} />
+                    <Route path="tenants" element={<SuperadminTenants />} />
+                    <Route path="tariffs" element={<SuperadminTariffs />} />
+                </Route>
 
-            <Route
-                path="/barber"
-                element={
-                    <ProtectedRoute allow="barber">
-                        <BarberLayout />
-                    </ProtectedRoute>
-                }
-            >
-                <Route index element={<Navigate to="calendar" replace />} />
-                <Route path="calendar" element={<BarberCalendar />} />
-                <Route path="requests" element={<BarberRequests />} />
-                <Route path="history" element={<BarberHistory />} />
-                <Route path="reports" element={<BarberReports />} />
-                <Route path="services" element={<BarberServices />} />
-                <Route path="settings" element={<BarberSettings />} />
-                <Route path="themes" element={<ThemesPage />} />
-            </Route>
+                <Route
+                    path="/admin"
+                    element={
+                        <ProtectedRoute allow="admin">
+                            <AdminLayout />
+                        </ProtectedRoute>
+                    }
+                >
+                    <Route index element={<Navigate to="bookings" replace />} />
+                    <Route path="bookings" element={<AdminBookings />} />
+                    <Route path="clients" element={<AdminClients />} />
+                    <Route path="history" element={<AdminHistory />} />
+                    <Route path="barbers" element={<AdminBarbers />} />
+                    <Route path="reports" element={<AdminReports />} />
+                    <Route path="payments" element={<AdminPayments />} />
+                    <Route path="services" element={<AdminServices />} />
+                    <Route path="settings" element={<AdminSettings />} />
+                    <Route path="themes" element={<ThemesPage />} />
+                </Route>
 
-            <Route
-                path="/themes"
-                element={
-                    <ProtectedRoute>
-                        <ThemesPage />
-                    </ProtectedRoute>
-                }
-            />
+                <Route
+                    path="/barber"
+                    element={
+                        <ProtectedRoute allow="barber">
+                            <BarberLayout />
+                        </ProtectedRoute>
+                    }
+                >
+                    <Route index element={<Navigate to="calendar" replace />} />
+                    <Route path="calendar" element={<BarberCalendar />} />
+                    <Route path="requests" element={<BarberRequests />} />
+                    <Route path="history" element={<BarberHistory />} />
+                    <Route path="reports" element={<BarberReports />} />
+                    <Route path="services" element={<BarberServices />} />
+                    <Route path="settings" element={<BarberSettings />} />
+                    <Route path="themes" element={<ThemesPage />} />
+                </Route>
 
-            <Route
-                path="/"
-                element={
-                    isAuthenticated
-                        ? <Navigate to={HOME_BY_ROLE[role] || '/login'} replace />
-                        : <Navigate to="/login" replace />
-                }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+                <Route
+                    path="/themes"
+                    element={
+                        <ProtectedRoute>
+                            <ThemesPage />
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/"
+                    element={
+                        isAuthenticated
+                            ? <Navigate to={HOME_BY_ROLE[role] || '/login'} replace />
+                            : <Navigate to="/login" replace />
+                    }
+                />
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+        </>
     );
 }

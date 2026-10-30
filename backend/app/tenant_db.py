@@ -80,6 +80,10 @@ def get_tenant_engine(slug: str):
                     except Exception:
                         pass
                     try:
+                        conn.execute(text("ALTER TABLE settings ADD COLUMN kaspi_phone VARCHAR(30) DEFAULT ''"))
+                    except Exception:
+                        pass
+                    try:
                         conn.execute(text("ALTER TABLE users ADD COLUMN salary_amount FLOAT DEFAULT 50.0"))
                     except Exception:
                         pass
