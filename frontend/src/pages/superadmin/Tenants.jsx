@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, KeyRound, Power, Trash2, X, Copy, Check, MapPin, RefreshCw, User, Phone, Coins, Settings2, Sparkles, Building2, Eye, EyeOff } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { Plus, KeyRound, Power, Trash2, X, Copy, Check, MapPin, RefreshCw, User, Phone, Coins, Settings2, Sparkles, Building2, Eye, EyeOff, Navigation, Search, Loader2 } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { superadminApi } from '../../api';
@@ -61,6 +61,16 @@ function MapClickHandler({ onLocationSelect }) {
     return null;
 }
 
+function MapViewController({ center, zoom }) {
+    const map = useMap();
+    useEffect(() => {
+        if (center && center[0] && center[1]) {
+            map.flyTo(center, zoom || 15, { duration: 1.2 });
+        }
+    }, [center, zoom, map]);
+    return null;
+}
+
 export default function SuperadminTenants() {
     const showToast = useToast();
     const navigate = useNavigate();
@@ -73,6 +83,9 @@ export default function SuperadminTenants() {
     const [form, setForm] = useState(emptyForm);
     const [copiedId, setCopiedId] = useState(null);
     const [confirmConfig, setConfirmConfig] = useState(null);
+    const [isLocating, setIsLocating] = useState(false);
+    const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+    const searchTimeoutRef = useRef(null);
 
     const [tariffPrices, setTariffPrices] = useState({
         price_1_month: 0,
@@ -120,6 +133,97 @@ export default function SuperadminTenants() {
 
     function handleLocationSelect(lat, lng) {
         setForm((f) => ({ ...f, lat, lng }));
+    }
+
+    // Auto-detect current geolocation via GPS/browser
+    function handleAutoDetectLocation() {
+        if (!navigator.geolocation) {
+            showToast('Геолокация не поддерживается вашим браузером', true);
+            return;
+        }
+        setIsLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                setForm((prev) => ({ ...prev, lat, lng }));
+                setIsLocating(false);
+                showToast('Ваше местоположение успешно определено ✓');
+
+                // Try reverse geocoding to fill address if empty
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+                        headers: { 'Accept-Language': 'ru' }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.display_name) {
+                            // Extract cleaner street address if available
+                            const addr = data.address;
+                            const road = addr?.road || addr?.pedestrian || addr?.street || '';
+                            const houseNumber = addr?.house_number || '';
+                            const city = addr?.city || addr?.town || addr?.village || '';
+                            const cleanAddress = road ? `${road}${houseNumber ? ', ' + houseNumber : ''}${city ? ', ' + city : ''}` : data.display_name;
+                            
+                            setForm((prev) => ({
+                                ...prev,
+                                address: prev.address ? prev.address : cleanAddress
+                            }));
+                        }
+                    }
+                } catch (e) {
+                    // Ignore reverse geocoding error
+                }
+            },
+            (error) => {
+                setIsLocating(false);
+                let msg = 'Не удалось определить местоположение';
+                if (error.code === 1) msg = 'Доступ к геолокации запрещен в браузере';
+                else if (error.code === 2) msg = 'Геолокация недоступна';
+                else if (error.code === 3) msg = 'Превышено время ожидания геолокации';
+                showToast(msg, true);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+    }
+
+    // Search address and set map location
+    async function searchAddress(query) {
+        if (!query || query.trim().length < 3) return;
+        setIsSearchingAddress(true);
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query.trim())}&limit=1`, {
+                headers: { 'Accept-Language': 'ru' }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lng = parseFloat(data[0].lon);
+                    setForm((prev) => ({ ...prev, lat, lng }));
+                    showToast('Местоположение по адресу найдено ✓');
+                } else {
+                    showToast('Адрес не найден на карте', true);
+                }
+            }
+        } catch (e) {
+            showToast('Ошибка поиска адреса', true);
+        } finally {
+            setIsSearchingAddress(false);
+        }
+    }
+
+    function handleAddressChange(e) {
+        const val = e.target.value;
+        setForm((prev) => ({ ...prev, address: val }));
+
+        // Debounced search when user stops typing
+        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+        if (val.trim().length >= 4) {
+            searchTimeoutRef.current = setTimeout(() => {
+                searchAddress(val);
+            }, 1000);
+        }
     }
 
     async function handleSave(e) {
@@ -387,31 +491,90 @@ export default function SuperadminTenants() {
                                 </div>
                             </div>
 
-                            {/* Address */}
+                            {/* Address with Auto-search */}
                             <div className="form-group">
-                                <label>Адрес</label>
-                                <input className="form-control" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+                                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span>Адрес</span>
+                                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>поиск по адресу обновляет точку на карте</span>
+                                </label>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <div style={{ position: 'relative', flex: 1 }}>
+                                        <input
+                                            className="form-control"
+                                            value={form.address}
+                                            onChange={handleAddressChange}
+                                            placeholder="Введите город, улицу, дом (напр. Алматы, Абая 50)"
+                                            style={{ paddingRight: isSearchingAddress ? 36 : 12 }}
+                                        />
+                                        {isSearchingAddress && (
+                                            <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--green)' }}>
+                                                <Loader2 size={16} className="spin" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline"
+                                        onClick={() => searchAddress(form.address)}
+                                        disabled={isSearchingAddress || !form.address || form.address.trim().length < 3}
+                                        style={{ height: 42, padding: '0 14px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, flexShrink: 0 }}
+                                        title="Найти указанный адрес на карте"
+                                    >
+                                        <Search size={14} /> Найти
+                                    </button>
+                                </div>
                             </div>
 
-                            {/* Map */}
+                            {/* Map with GPS auto-locate button */}
                             <div className="form-group">
-                                <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <MapPin size={14} /> Местоположение на карте
-                                    {form.lat && <span style={{ color: 'var(--green)', fontSize: 12 }}> — точка выбрана ✓</span>}
-                                </label>
-                                <div className="map-container">
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+                                        <MapPin size={14} color="var(--green)" />
+                                        <span>Местоположение на карте</span>
+                                        {form.lat && <span style={{ color: 'var(--green)', fontSize: 12, fontWeight: 600 }}> — точка выбрана ✓</span>}
+                                    </label>
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline btn-sm"
+                                        onClick={handleAutoDetectLocation}
+                                        disabled={isLocating}
+                                        style={{
+                                            height: 28,
+                                            padding: '0 10px',
+                                            fontSize: 11,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 5,
+                                            borderRadius: 999,
+                                            background: 'rgba(var(--green-rgb, 74, 222, 128), 0.08)',
+                                            borderColor: 'rgba(var(--green-rgb, 74, 222, 128), 0.3)',
+                                            color: 'var(--green)',
+                                            fontWeight: 600
+                                        }}
+                                    >
+                                        {isLocating ? <Loader2 size={12} className="spin" /> : <Navigation size={12} />}
+                                        {isLocating ? 'Определение...' : 'Моё местоположение'}
+                                    </button>
+                                </div>
+                                <div className="map-container" style={{ position: 'relative' }}>
                                     <MapContainer
                                         center={form.lat ? [form.lat, form.lng] : DEFAULT_CENTER}
-                                        zoom={13}
+                                        zoom={form.lat ? 15 : 13}
                                         style={{ height: '100%', width: '100%' }}
                                     >
                                         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                                         <MapClickHandler onLocationSelect={handleLocationSelect} />
+                                        {form.lat && <MapViewController center={[form.lat, form.lng]} zoom={15} />}
                                         {form.lat && <Marker position={[form.lat, form.lng]} />}
                                     </MapContainer>
                                 </div>
-                                <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4 }}>
-                                    Нажмите на карту, чтобы выбрать местоположение барбершопа
+                                <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span>Нажмите на карту или используйте поиск адреса / кнопку «Моё местоположение»</span>
+                                    {form.lat && (
+                                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                            {form.lat.toFixed(5)}, {form.lng.toFixed(5)}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
 
