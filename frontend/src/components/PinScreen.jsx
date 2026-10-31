@@ -9,6 +9,7 @@
  * Дизайн: Современный квадратный (squircle/boxes) стиль,
  * 4 стильных ячейки ввода, эргономичные квадратные кнопки со
  * скруглением (soft-square), стеклянный блюр и фирменная подсветка.
+ * ПИН-код изолирован персонально для каждой роли и пользователя.
  * ------------------------------------------------------------
  */
 import { useState, useEffect, useCallback } from 'react';
@@ -29,7 +30,7 @@ const KEYPAD_LETTERS = {
 };
 
 export default function PinScreen({ mode = 'unlock', onUnlock, onComplete, onCancel, onLogout }) {
-    const { fullName, shopName, role, unlock, setPin, removePin } = useAuth();
+    const { fullName, shopName, role, unlock, verifyPin, setPin, removePin } = useAuth();
 
     // Internal states
     const [digits, setDigits] = useState('');
@@ -81,8 +82,8 @@ export default function PinScreen({ mode = 'unlock', onUnlock, onComplete, onCan
                     triggerError('Неверный ПИН-код');
                 }
             } else if (step === 'verify_old') {
-                const saved = localStorage.getItem('barberpro_pin');
-                if (digits === saved) {
+                const ok = verifyPin ? verifyPin(digits) : unlock(digits);
+                if (ok) {
                     setDigits('');
                     setStep('enter_new');
                 } else {
@@ -108,7 +109,7 @@ export default function PinScreen({ mode = 'unlock', onUnlock, onComplete, onCan
         }, 120);
 
         return () => clearTimeout(timer);
-    }, [digits, step, firstPin, unlock, setPin, triggerError, onUnlock, onComplete]);
+    }, [digits, step, firstPin, unlock, verifyPin, setPin, triggerError, onUnlock, onComplete]);
 
     // Keyboard support (0-9, Backspace, Escape)
     useEffect(() => {
@@ -128,6 +129,14 @@ export default function PinScreen({ mode = 'unlock', onUnlock, onComplete, onCan
     // Title & prompt texts
     let title = 'Быстрый вход';
     let subtitle = fullName ? `Здравствуйте, ${fullName}` : (shopName || 'BarberPro');
+
+    if (role === 'superadmin') {
+        subtitle = fullName ? `${fullName} (Владелец)` : 'Владелец платформы';
+    } else if (role === 'admin') {
+        subtitle = shopName ? `Администратор • ${shopName}` : (fullName || 'Администратор');
+    } else if (role === 'barber') {
+        subtitle = fullName ? `Барбер: ${fullName}` : (shopName || 'Барбер');
+    }
 
     if (step === 'verify_old') {
         title = 'Смена ПИН-кода';
@@ -324,8 +333,10 @@ export default function PinScreen({ mode = 'unlock', onUnlock, onComplete, onCan
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
+                                justifySelf: 'center',
                                 justifyContent: 'center',
                                 gap: 2,
+                                width: '100%',
                                 transition: 'all 0.12s ease',
                                 boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
                                 userSelect: 'none',
@@ -372,7 +383,8 @@ export default function PinScreen({ mode = 'unlock', onUnlock, onComplete, onCan
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            transition: 'all 0.12s ease'
+                            transition: 'all 0.12s ease',
+                            width: '100%'
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-main)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
@@ -396,6 +408,7 @@ export default function PinScreen({ mode = 'unlock', onUnlock, onComplete, onCan
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: 2,
+                            width: '100%',
                             transition: 'all 0.12s ease',
                             boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
                             userSelect: 'none',
@@ -435,7 +448,8 @@ export default function PinScreen({ mode = 'unlock', onUnlock, onComplete, onCan
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            transition: 'all 0.12s ease'
+                            transition: 'all 0.12s ease',
+                            width: '100%'
                         }}
                         onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; e.currentTarget.style.color = '#ef4444'; }}
                         onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
