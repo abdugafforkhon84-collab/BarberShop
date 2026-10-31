@@ -148,7 +148,7 @@ export default function PinScreen({ mode = 'unlock', onUnlock, onComplete, onCan
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'radial-gradient(ellipse at top, rgba(16, 185, 129, 0.12) 0%, rgba(10, 11, 14, 0.98) 75%)',
+            background: 'radial-gradient(ellipse at top, var(--green-glow) 0%, rgba(10, 11, 14, 0.98) 75%)',
             backdropFilter: 'blur(24px)',
             padding: 20,
             userSelect: 'none'
@@ -160,7 +160,7 @@ export default function PinScreen({ mode = 'unlock', onUnlock, onComplete, onCan
                 border: '1px solid var(--border)',
                 borderRadius: 'var(--radius-xl, 24px)',
                 padding: '32px 28px 24px',
-                boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(16, 185, 129, 0.08)',
+                boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5), 0 0 40px var(--green-glow)',
                 textAlign: 'center',
                 animation: 'fadeUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
                 position: 'relative'
@@ -197,17 +197,17 @@ export default function PinScreen({ mode = 'unlock', onUnlock, onComplete, onCan
                     height: 58,
                     margin: '0 auto 16px',
                     borderRadius: 16,
-                    background: 'linear-gradient(135deg, var(--green) 0%, #059669 100%)',
+                    background: 'var(--green)',
                     boxShadow: '0 8px 24px var(--green-glow)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#06180f'
+                    color: '#ffffff'
                 }}>
                     {step === 'unlock' ? (
-                        <Lock size={28} strokeWidth={2.4} />
+                        <Lock size={28} strokeWidth={2.4} color="#ffffff" />
                     ) : (
-                        <KeyRound size={28} strokeWidth={2.4} />
+                        <KeyRound size={28} strokeWidth={2.4} color="#ffffff" />
                     )}
                 </div>
 
