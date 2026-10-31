@@ -55,13 +55,11 @@ import os
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-# Include routers under /api (and keep /auth for backwards compatibility)
+# Include routers both under /api and directly for universal compatibility (Vite dev proxy & direct calls)
 api_routers = [auth, superadmin, admin, barber, clients, services, settings_router]
 for r in api_routers:
     app.include_router(r.router, prefix="/api")
-
-# Also mount auth directly at /auth so legacy /auth/login calls work seamlessly
-app.include_router(auth.router)
+    app.include_router(r.router)
 
 frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
 
