@@ -55,11 +55,13 @@ import os
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-# Include routers both directly and under /api for development & production compatibility
+# Include routers under /api (and keep /auth for backwards compatibility)
 api_routers = [auth, superadmin, admin, barber, clients, services, settings_router]
 for r in api_routers:
-    app.include_router(r.router)
     app.include_router(r.router, prefix="/api")
+
+# Also mount auth directly at /auth so legacy /auth/login calls work seamlessly
+app.include_router(auth.router)
 
 frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
 
@@ -84,7 +86,8 @@ if os.path.isdir(frontend_dist):
     def catch_all(path_name: str):
         # Don't intercept API calls
         if path_name.startswith("api/"):
-            return {"detail": "Not Found"}
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Not Found")
             
         file_path = os.path.join(frontend_dist, path_name)
         if os.path.isfile(file_path):

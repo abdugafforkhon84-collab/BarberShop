@@ -30,7 +30,7 @@ const KEYPAD_LETTERS = {
 
 export default function PinScreen({ mode = 'unlock', onUnlock, onComplete, onCancel, onLogout }) {
     const { fullName, shopName, role, unlock, setPin, removePin } = useAuth();
-    
+
     // Internal states
     const [digits, setDigits] = useState('');
     const [step, setStep] = useState(mode === 'change' ? 'verify_old' : mode === 'setup' ? 'enter_new' : 'unlock');
