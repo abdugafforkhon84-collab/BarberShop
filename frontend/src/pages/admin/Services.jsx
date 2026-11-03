@@ -259,8 +259,23 @@ export default function AdminServices() {
                             <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>{s.duration} мин</div>
                         </div>
                         <div style={{ display: 'flex', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                            <button className="btn btn-sm btn-outline" onClick={() => openEditMain(s)} style={{ flex: 1 }}>Изменить</button>
-                            <button className="btn btn-sm btn-danger" onClick={() => removeMain(s.id)}>Удалить</button>
+                            <button 
+                                className="btn btn-sm btn-outline" 
+                                onClick={() => openEditMain(s)} 
+                                style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 40, fontSize: 13, fontWeight: 600 }}
+                            >
+                                <Edit2 size={16} color="var(--green)" />
+                                <span>Изменить</span>
+                            </button>
+                            <button 
+                                className="btn btn-sm btn-danger" 
+                                onClick={() => removeMain(s.id)}
+                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 40, padding: '0 14px', fontSize: 13 }}
+                                title="Удалить услугу"
+                            >
+                                <Trash2 size={16} />
+                                <span>Удалить</span>
+                            </button>
                         </div>
                     </div>
                 ))}
@@ -291,9 +306,9 @@ export default function AdminServices() {
                         <div className="card" key={extra.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                                 <div style={{
-                                    width: 44,
-                                    height: 44,
-                                    borderRadius: 12,
+                                    width: 48,
+                                    height: 48,
+                                    borderRadius: 14,
                                     background: 'var(--green-glow)',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -301,33 +316,57 @@ export default function AdminServices() {
                                     color: 'var(--green)',
                                     flexShrink: 0
                                 }}>
-                                    <IconComponent size={22} />
+                                    <IconComponent size={24} />
                                 </div>
                                 <div>
                                     <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-main)' }}>
                                         {extra.name}
                                     </div>
-                                    <div style={{ color: 'var(--green)', fontSize: 14, fontWeight: 700, marginTop: 2 }}>
+                                    <div style={{ color: 'var(--green)', fontSize: 15, fontWeight: 800, marginTop: 2 }}>
                                         +{formatMoney(extra.price)}
                                     </div>
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', gap: 6 }}>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                 <button 
-                                    className="btn btn-sm btn-outline btn-icon-round" 
+                                    type="button"
+                                    className="btn btn-outline" 
                                     onClick={() => openEditExtra(extra)} 
-                                    title="Изменить"
-                                    style={{ width: 34, height: 34 }}
+                                    title="Изменить доп. услугу"
+                                    style={{ 
+                                        width: 42, 
+                                        height: 42, 
+                                        borderRadius: 12,
+                                        padding: 0,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderColor: 'var(--border)',
+                                        background: 'var(--bg-panel)',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                                    }}
                                 >
-                                    <Edit2 size={15} />
+                                    <Edit2 size={20} color="var(--green)" />
                                 </button>
                                 <button 
-                                    className="btn btn-sm btn-danger btn-icon-round" 
+                                    type="button"
+                                    className="btn btn-danger" 
                                     onClick={() => removeExtra(extra.id)} 
-                                    title="Удалить"
-                                    style={{ width: 34, height: 34 }}
+                                    title="Удалить доп. услугу"
+                                    style={{ 
+                                        width: 42, 
+                                        height: 42, 
+                                        borderRadius: 12,
+                                        padding: 0,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 2px 6px rgba(239,68,68,0.2)'
+                                    }}
                                 >
-                                    <Trash2 size={15} />
+                                    <Trash2 size={20} />
                                 </button>
                             </div>
                         </div>
