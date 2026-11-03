@@ -5,8 +5,7 @@
  * ------------------------------------------------------------
  */
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
-import { Sparkles } from 'lucide-react';
+import { X, Sparkles, Scissors, Plus, Check } from 'lucide-react';
 import { servicesApi, settingsApi } from '../../api';
 import { useToast } from '../../components/Toast';
 import { formatMoney } from '../../utils';
@@ -33,8 +32,11 @@ export default function AdminServices() {
                 servicesApi.list(),
                 settingsApi.get()
             ]);
-            setServices(svcList);
+            setServices(svcList || []);
             setShopSettings(st);
+        } catch (err) {
+            console.error('Error loading services:', err);
+            showToast('Ошибка загрузки услуг', true);
         } finally {
             setLoading(false);
         }
@@ -52,11 +54,11 @@ export default function AdminServices() {
 
     async function handleSave(e) {
         e.preventDefault();
-        const payload = { name: form.name, price: Number(form.price), duration: Number(form.duration) };
+        const payload = { name: form.name.trim(), price: Number(form.price), duration: Number(form.duration) };
         try {
             if (form.id) await servicesApi.update(form.id, payload);
             else await servicesApi.create(payload);
-            showToast('Услуга сохранена');
+            showToast('Услуга сохранена ✓');
             setModalOpen(false);
             load();
         } catch (err) {
@@ -87,7 +89,7 @@ export default function AdminServices() {
         setSavingSettings(true);
         try {
             await settingsApi.update(shopSettings);
-            showToast('Цены дополнительных услуг сохранены');
+            showToast('Цены дополнительных услуг сохранены ✓');
         } catch (err) {
             showToast(err.response?.data?.detail || 'Ошибка сохранения', true);
         } finally {
@@ -102,7 +104,10 @@ export default function AdminServices() {
                     <h1>Услуги</h1>
                     <div className="subtitle">Каталог услуг и цен</div>
                 </div>
-                <button className="btn btn-primary" onClick={openCreate}>+ Добавить услугу</button>
+                <button className="btn btn-primary" onClick={openCreate} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Plus size={16} />
+                    <span>Добавить услугу</span>
+                </button>
             </div>
 
             <div className="grid grid-3">
@@ -110,7 +115,10 @@ export default function AdminServices() {
                 {!loading && services.length === 0 && <p className="empty-state">Услуг пока нет</p>}
                 {services.map((s) => (
                     <div className="card" key={s.id}>
-                        <h3 style={{ marginBottom: 8 }}>{s.name}</h3>
+                        <h3 style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Scissors size={18} color="var(--green)" />
+                            <span>{s.name}</span>
+                        </h3>
                         <div style={{ color: 'var(--green)', fontSize: 22, fontWeight: 800, marginBottom: 4 }}>{formatMoney(s.price)}</div>
                         <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>{s.duration} мин</div>
                         <div style={{ display: 'flex', gap: 8 }}>
@@ -174,37 +182,64 @@ export default function AdminServices() {
 
             {modalOpen && (
                 <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setModalOpen(false)}>
-                    <div className="modal-box" style={{ maxWidth: 400 }}>
+                    <div className="modal-box" style={{ maxWidth: 420 }}>
                         <div className="modal-header">
                             <div>
-                                <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <Scissors size={18} color="var(--green)" />
+                                <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                                    <Scissors size={20} color="var(--green)" />
                                     <span>{form.id ? 'Изменить услугу' : 'Новая услуга'}</span>
                                 </h2>
-                                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                                    Настройка параметров услуги, стоимости и времени выполнения
+                                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                                    {form.id ? 'Редактирование параметров услуги' : 'Добавление новой услуги в каталог'}
                                 </div>
                             </div>
                             <button className="modal-close" onClick={() => setModalOpen(false)}><X size={18} /></button>
                         </div>
                         <form onSubmit={handleSave}>
-                            <div className="form-group">
-                                <label>Название</label>
-                                <input className="form-control" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                            <div className="form-group" style={{ marginBottom: 14 }}>
+                                <label className="field-label">Название услуги *</label>
+                                <input
+                                    className="input"
+                                    value={form.name}
+                                    placeholder="Например: Мужская стрижка, Стрижка бороды"
+                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                    required
+                                    autoFocus
+                                />
                             </div>
-                            <div className="form-row">
+                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
                                 <div className="form-group">
-                                    <label>Цена (₸)</label>
-                                    <input type="number" className="form-control" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} min="0" required />
+                                    <label className="field-label">Цена (₸) *</label>
+                                    <input
+                                        type="number"
+                                        className="input"
+                                        value={form.price}
+                                        placeholder="0"
+                                        onChange={(e) => setForm({ ...form, price: e.target.value })}
+                                        min="0"
+                                        required
+                                    />
                                 </div>
                                 <div className="form-group">
-                                    <label>Длительность (мин)</label>
-                                    <input type="number" className="form-control" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} min="5" required />
+                                    <label className="field-label">Длительность (мин) *</label>
+                                    <input
+                                        type="number"
+                                        className="input"
+                                        value={form.duration}
+                                        placeholder="30"
+                                        onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                                        min="5"
+                                        step="5"
+                                        required
+                                    />
                                 </div>
                             </div>
-                            <div className="modal-actions">
-                                <button type="submit" className="btn btn-primary">Сохранить</button>
+                            <div className="modal-actions" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                                 <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Отмена</button>
+                                <button type="submit" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                    <Check size={16} />
+                                    <span>{form.id ? 'Сохранить' : 'Добавить услугу'}</span>
+                                </button>
                             </div>
                         </form>
                     </div>

@@ -12,6 +12,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { registerSW } from 'virtual:pwa-register';
 
 import App from './App';
+import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
 import './styles/global.css';
@@ -20,12 +21,14 @@ registerSW({ immediate: true });
 
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
-        <BrowserRouter>
-            <AuthProvider>
-                <ToastProvider>
-                    <App />
-                </ToastProvider>
-            </AuthProvider>
-        </BrowserRouter>
+        <ErrorBoundary>
+            <BrowserRouter>
+                <AuthProvider>
+                    <ToastProvider>
+                        <App />
+                    </ToastProvider>
+                </AuthProvider>
+            </BrowserRouter>
+        </ErrorBoundary>
     </React.StrictMode>
 );

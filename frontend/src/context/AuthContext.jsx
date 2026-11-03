@@ -38,7 +38,7 @@ export function getPinStorageKey(role, tenant, fullName, token) {
             try {
                 const payload = JSON.parse(atob(currentToken.split('.')[1]));
                 if (payload && payload.sub) barberId = String(payload.sub);
-            } catch (_) {}
+            } catch (_) { }
         }
         const slug = (currentTenant || 'shop').toLowerCase().trim().replace(/[^a-z0-9_-]/g, '_');
         const user = (barberId || currentName || 'barber').toLowerCase().trim().replace(/[^a-z0-9_-]/g, '_');
@@ -121,7 +121,7 @@ export function AuthProvider({ children }) {
 
         if (data.shop_name) localStorage.setItem('barberpro_shop', data.shop_name);
         else localStorage.removeItem('barberpro_shop');
-        
+
         if (data.shop_type) localStorage.setItem('barberpro_shop_type', data.shop_type);
 
         // Preserve user's explicitly selected theme or adopt tenant default
@@ -208,11 +208,11 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('barberpro_name');
         localStorage.removeItem('barberpro_shop');
         localStorage.removeItem('barberpro_shop_type');
-        
+
         // DO NOT remove barberpro_theme! The user's theme selection remains saved permanently.
         localStorage.setItem('barberpro_theme', currentTheme);
         document.documentElement.setAttribute('data-theme', currentTheme);
-        
+
         setToken(null);
         setRole(null);
         setTenant(null);
@@ -235,7 +235,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem('barberpro_name', data.full_name);
         if (data.shop_name) localStorage.setItem('barberpro_shop', data.shop_name);
         else localStorage.removeItem('barberpro_shop');
-        
+
         if (data.shop_type) localStorage.setItem('barberpro_shop_type', data.shop_type);
 
         const existingLocalTheme = localStorage.getItem('barberpro_theme');
