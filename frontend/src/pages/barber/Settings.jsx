@@ -1,30 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { History, Scissors, LogOut, Palette, ChevronRight, KeyRound } from 'lucide-react';
+import { History, Scissors, LogOut, ChevronRight, KeyRound } from 'lucide-react';
 import { useToast } from '../../components/Toast';
 import PinScreen from '../../components/PinScreen';
 
 export default function BarberSettings() {
     const showToast = useToast();
     const navigate = useNavigate();
-    const { logout, fullName, role, shopName, shopTheme, hasPin, removePin } = useAuth();
+    const { logout, fullName, hasPin, removePin } = useAuth();
     const [pinModalMode, setPinModalMode] = useState(null);
 
     function handleLogout() {
         logout();
         navigate('/login');
     }
-
-    const currentTheme = localStorage.getItem('barberpro_theme') || shopTheme || 'dark';
-
-    const THEME_NAMES = {
-        dark: 'Тёмная',
-        light: 'Светлая',
-        pink: 'Розовая',
-        luxury: 'Люкс Золото',
-        gold: 'Люкс Золото'
-    };
 
     return (
         <div style={{ maxWidth: 640 }}>
@@ -53,23 +43,6 @@ export default function BarberSettings() {
                         <span className="sci-name">Мои услуги</span>
                     </div>
                     <ChevronRight size={18} color="var(--text-muted)" />
-                </button>
-                <button className="service-check-item" onClick={() => navigate('/barber/themes')}>
-                    <div className="sci-left">
-                        <Palette size={20} color="var(--green)" />
-                        <div>
-                            <div className="sci-name">Темы оформления</div>
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                                Выбор: Тёмный, Светлый, Розовый, Золотой Люкс
-                            </div>
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span className="badge" style={{ background: 'var(--green-glow)', color: 'var(--green)', fontSize: 11, fontWeight: 700 }}>
-                            {THEME_NAMES[currentTheme] || 'Тёмная'}
-                        </span>
-                        <ChevronRight size={18} color="var(--text-muted)" />
-                    </div>
                 </button>
             </div>
 

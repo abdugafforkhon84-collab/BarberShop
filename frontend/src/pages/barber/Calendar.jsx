@@ -190,20 +190,6 @@ export default function BarberCalendar() {
 
     return (
         <>
-            <div className="page-header">
-                <div>
-                    <h1>Календарь</h1>
-                    <div className="subtitle">Нажмите на слот чтобы записать клиента</div>
-                </div>
-            </div>
-
-            <div className="legend">
-                <div className="legend-item"><span className="legend-dot" style={{ background: 'var(--status-pending)' }} /> Ожидает</div>
-                <div className="legend-item"><span className="legend-dot" style={{ background: 'var(--status-confirmed)' }} /> Принято</div>
-                <div className="legend-item"><span className="legend-dot" style={{ background: 'var(--status-done)' }} /> Выполнено</div>
-                <div className="legend-item"><span className="legend-dot" style={{ background: 'var(--status-cancelled)' }} /> Отменено</div>
-            </div>
-
             {loading ? (
                 <p className="empty-state">Загрузка...</p>
             ) : (

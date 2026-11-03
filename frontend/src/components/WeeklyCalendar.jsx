@@ -29,11 +29,6 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 
 const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
-const MONTH_NAMES_RU = [
-    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
-];
-
 function toDateStr(d) {
     return d.toISOString().slice(0, 10);
 }
@@ -46,18 +41,28 @@ function startOfWeek(date) {
     return d;
 }
 
-function buildSlots(workStart, workEnd, slotMinutes) {
+function buildSlots(workStart = '08:00', workEnd = '22:00', slotMinutes = 30) {
     const slots = [];
-    const [startH, startM] = workStart.split(':').map(Number);
-    const [endH, endM] = workEnd.split(':').map(Number);
-    let cursor = startH * 60 + startM;
-    const end = endH * 60 + endM;
-    while (cursor < end) {
-        const h = Math.floor(cursor / 60);
-        const m = cursor % 60;
-        slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
-        cursor += slotMinutes;
+    const [startH, startM] = (workStart || '08:00').split(':').map(Number);
+    const [endH, endM] = (workEnd || '22:00').split(':').map(Number);
+    let cursor = startH * 60 + (startM || 0);
+    let end = endH * 60 + (endM || 0);
+
+    // If closing time is 00:00, 01:00 or overnight (<= start time), it operates past midnight!
+    if (end <= cursor) {
+        end += 24 * 60;
     }
+
+    const interval = Number(slotMinutes) > 0 ? Number(slotMinutes) : 30;
+
+    while (cursor <= end) {
+        const totalMinutes = cursor % (24 * 60);
+        const h = Math.floor(totalMinutes / 60);
+        const m = totalMinutes % 60;
+        slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+        cursor += interval;
+    }
+
     return slots;
 }
 
@@ -126,16 +131,12 @@ export default function WeeklyCalendar({
         onWeekChange(d);
     }
 
-    const monthLabel = MONTH_NAMES_RU[days[0].getMonth()];
     const weekLabel = `${days[0].toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })} — ${days[6].toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}`;
 
     return (
         <div className="cal">
-            {/* Month label */}
-            <div className="cal-month-label">{monthLabel}</div>
-
             {/* Week navigation */}
-            <div className="week-toolbar">
+            <div className="week-toolbar" style={{ marginTop: 0 }}>
                 <button className="btn btn-icon" onClick={goPrevWeek} aria-label="Предыдущая неделя">
                     <ChevronLeft size={18} />
                 </button>

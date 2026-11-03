@@ -190,22 +190,6 @@ export default function AdminBookings() {
 
     return (
         <>
-            <div className="page-header">
-                <div>
-                    <h1>Записи клиентов</h1>
-                    <div className="subtitle">Кликните на пустой слот, чтобы записать клиента</div>
-                </div>
-            </div>
-
-            <div className="legend">
-                {CALENDAR_STATUSES.map(({ key, label, color }) => (
-                    <div className="legend-item" key={key}>
-                        <span className="legend-dot" style={{ background: color }} />
-                        {label}
-                    </div>
-                ))}
-            </div>
-
             {loading ? (
                 <p className="empty-state">Загрузка...</p>
             ) : (

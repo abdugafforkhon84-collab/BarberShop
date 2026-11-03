@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { settingsApi, adminBranchesApi } from '../../api';
 import { useToast } from '../../components/Toast';
-import { Building2, ShieldCheck, Coins, Palette, Users, Wallet, Scissors, History, LogOut, User, Save, Clock, Phone, MapPin, Sparkles, Map, ChevronRight, CreditCard, KeyRound } from 'lucide-react';
+import { Building2, ShieldCheck, Coins, Users, Wallet, Scissors, History, LogOut, User, Save, Clock, Map, KeyRound, Sparkles } from 'lucide-react';
 import PinScreen from '../../components/PinScreen';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 export default function AdminSettings() {
     const showToast = useToast();
     const navigate = useNavigate();
-    const { logout, fullName, role, shopName, shopType, setShopTheme, setShopType, switchBranch, hasPin, removePin } = useAuth();
+    const { logout, fullName, shopType, setShopTheme, setShopType, switchBranch, hasPin, removePin } = useAuth();
     const [form, setForm] = useState(null);
     const [saving, setSaving] = useState(false);
     const [branches, setBranches] = useState([]);
@@ -19,8 +19,6 @@ export default function AdminSettings() {
         logout();
         navigate('/login');
     }
-
-
 
     useEffect(() => {
         settingsApi.get().then(setForm).catch((err) => {
@@ -36,7 +34,7 @@ export default function AdminSettings() {
         } catch (err) {
             showToast(err.response?.data?.detail || 'Ошибка при переключении филиала', true);
         }
-    }
+    };
 
     async function handleSave(e) {
         e.preventDefault();
@@ -143,49 +141,6 @@ export default function AdminSettings() {
                 </div>
             )}
 
-            {/* Themes Link Card */}
-            <div 
-                className="card" 
-                onClick={() => navigate('/admin/themes')}
-                style={{ 
-                    marginBottom: 24, 
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '16px 20px',
-                    transition: 'var(--transition)'
-                }}
-            >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 12,
-                        background: 'var(--green-glow)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'var(--green)',
-                        flexShrink: 0
-                    }}>
-                        <Palette size={22} />
-                    </div>
-                    <div>
-                        <div style={{ fontWeight: 700, fontSize: 15 }}>Темы оформления</div>
-                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                            Тёмный, Светлый, Розовый и Золотой Люкс · Нажмите для выбора
-                        </div>
-                    </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="badge" style={{ background: 'var(--green-glow)', color: 'var(--green)', fontSize: 11, fontWeight: 700 }}>
-                        {form?.theme === 'light' ? 'Светлая' : form?.theme === 'pink' ? 'Розовая' : form?.theme === 'luxury' || form?.theme === 'gold' ? 'Люкс Золото' : 'Тёмная'}
-                    </span>
-                    <ChevronRight size={18} color="var(--text-muted)" />
-                </div>
-            </div>
-
             {/* Tenant Security Isolation Pill */}
             <div style={{
                 display: 'flex',
@@ -278,260 +233,179 @@ export default function AdminSettings() {
                 })()}
             </div>
 
+            {/* Branch Details */}
             <form onSubmit={handleSave} className="card" style={{ marginBottom: 16, padding: 20 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
-                        <Building2 size={18} color="var(--accent)" />
-                        <span>Информация о филиале</span>
-                    </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+                    <Building2 size={18} color="var(--accent)" />
+                    <span>Информация о филиале</span>
+                </div>
 
-                    <div className="form-group" style={{ marginBottom: 14 }}>
-                        <label className="field-label">Название барбершопа</label>
+                <div className="form-group" style={{ marginBottom: 14 }}>
+                    <label className="field-label">Название барбершопа</label>
+                    <input
+                        className="input"
+                        value={form.shop_name || ''}
+                        onChange={(e) => setForm({ ...form, shop_name: e.target.value })}
+                        required
+                    />
+                </div>
+
+                <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div className="form-group">
+                        <label className="field-label">Телефон</label>
                         <input
                             className="input"
-                            value={form.shop_name || ''}
-                            onChange={(e) => setForm({ ...form, shop_name: e.target.value })}
-                            required
+                            value={form.phone || ''}
+                            onChange={(e) => setForm({ ...form, phone: e.target.value })}
                         />
                     </div>
-
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <div className="form-group">
-                            <label className="field-label">Телефон</label>
-                            <input
-                                className="input"
-                                value={form.phone || ''}
-                                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="field-label">Адрес</label>
-                            <input
-                                className="input"
-                                value={form.address || ''}
-                                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                            />
-                        </div>
-                    </div>
-                    <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={saving}
-                        style={{ marginTop: 16, height: 42, padding: '0 24px', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 8 }}
-                    >
-                        <Save size={16} />
-                        {saving ? 'Сохранение...' : 'Сохранить изменения'}
-                    </button>
-                </form>
-
-                {/* Visual Settings */}
-                <form onSubmit={handleSave} className="card" style={{ marginBottom: 16, padding: 20 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
-                        <Palette size={18} color="var(--accent)" />
-                        <span>Внешний вид и тип заведения</span>
-                    </div>
-
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <div className="form-group">
-                            <label className="field-label">Тип заведения</label>
-                            <select
-                                className="input"
-                                value={form.shop_type || 'barbershop'}
-                                onChange={(e) => setForm({ ...form, shop_type: e.target.value })}
-                            >
-                                <option value="barbershop">Барбершоп (стрижки, бороды)</option>
-                                <option value="salon">Салон красоты (ногти, волосы, макияж)</option>
-                            </select>
-                        </div>
-                        <div className="form-group">
-                            <label className="field-label">Цветовая тема по умолчанию</label>
-                            <select
-                                className="input"
-                                value={form.theme || 'dark'}
-                                onChange={(e) => {
-                                    const t = e.target.value;
-                                    setForm({ ...form, theme: t });
-                                    setShopTheme(t);
-                                    localStorage.setItem('barberpro_theme', t);
-                                    document.documentElement.setAttribute('data-theme', t);
-                                }}
-                            >
-                                <option value="dark">Тёмный сапфир (Dark Classic)</option>
-                                <option value="light">Светлый кристалл (Light Clean)</option>
-                                <option value="pink">Розовый барби (Rose Blossom)</option>
-                                <option value="luxury">Королевский Люкс (Royal Gold Luxury)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={saving}
-                        style={{ marginTop: 16, height: 42, padding: '0 24px', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 8 }}
-                    >
-                        <Save size={16} />
-                        {saving ? 'Сохранение...' : 'Применить изменения'}
-                    </button>
-                </form>
-
-                {/* Working Hours & Slots */}
-                <form onSubmit={handleSave} className="card" style={{ marginBottom: 16, padding: 20 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
-                        <Clock size={18} color="var(--accent)" />
-                        <span>Режим работы и слоты</span>
-                    </div>
-
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-                        <div className="form-group">
-                            <label className="field-label">Открытие</label>
-                            <input
-                                type="time"
-                                className="input"
-                                value={form.work_start || '09:00'}
-                                onChange={(e) => setForm({ ...form, work_start: e.target.value })}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="field-label">Закрытие</label>
-                            <input
-                                type="time"
-                                className="input"
-                                value={form.work_end || '21:00'}
-                                onChange={(e) => setForm({ ...form, work_end: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <div className="form-group">
-                            <label className="field-label">Длительность слота (мин)</label>
-                            <input
-                                type="number"
-                                className="input"
-                                min="5"
-                                step="5"
-                                value={form.slot_minutes || 30}
-                                onChange={(e) => setForm({ ...form, slot_minutes: Number(e.target.value) })}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="field-label">Валюта</label>
-                            <input
-                                className="input"
-                                value={form.currency || '₸'}
-                                onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={saving}
-                        style={{ marginTop: 16, height: 42, padding: '0 24px', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 8 }}
-                    >
-                        <Save size={16} />
-                        {saving ? 'Сохранение...' : 'Сохранить изменения'}
-                    </button>
-                </form>
-
-                {/* Payment Methods & Kaspi */}
-                <form onSubmit={handleSave} className="card" style={{ marginBottom: 16, padding: 20 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 16, marginBottom: 16, color: 'var(--text-main)' }}>
-                        <CreditCard size={18} color="var(--accent)" />
-                        <span>Способы оплаты и Kaspi перевод</span>
-                    </div>
-
-                    <div className="form-group" style={{ marginBottom: 14 }}>
-                        <label className="field-label">Номер Kaspi для оплаты (Kaspi Gold / Kaspi Pay)</label>
+                    <div className="form-group">
+                        <label className="field-label">Адрес</label>
                         <input
                             className="input"
-                            value={form.kaspi_phone || ''}
-                            onChange={(e) => setForm({ ...form, kaspi_phone: e.target.value })}
-                            placeholder="+7 777 123 45 67"
+                            value={form.address || ''}
+                            onChange={(e) => setForm({ ...form, address: e.target.value })}
                         />
-                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.4 }}>
-                            Этот номер автоматически отображается в окне оплаты при завершении стрижки/услуги, чтобы клиент мог быстро перевести оплату на Kaspi. Также поддерживается оплата наличными.
-                        </div>
                     </div>
+                </div>
+                <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={saving}
+                    style={{ marginTop: 16, height: 42, padding: '0 24px', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                >
+                    <Save size={16} />
+                    {saving ? 'Сохранение...' : 'Сохранить изменения'}
+                </button>
+            </form>
 
-                    <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={saving}
-                        style={{ marginTop: 12, height: 42, padding: '0 24px', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 8 }}
-                    >
-                        <Save size={16} />
-                        {saving ? 'Сохранение...' : 'Сохранить способ оплаты'}
-                    </button>
-                </form>
+            {/* Working Hours & Slots */}
+            <form onSubmit={handleSave} className="card" style={{ marginBottom: 16, padding: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+                    <Clock size={18} color="var(--accent)" />
+                    <span>Режим работы и слоты</span>
+                </div>
 
-                {/* PIN Code Security Card */}
-                <div className="card" style={{ marginBottom: 24, padding: 20 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 16, color: 'var(--text-main)' }}>
-                            <KeyRound size={18} color="var(--accent)" />
-                            <span>Быстрый вход по ПИН-коду (4 цифры)</span>
-                        </div>
-                        <span className={`badge ${hasPin ? 'badge-done' : 'badge-cancelled'}`}>
-                            {hasPin ? 'Активен' : 'Не установлен'}
-                        </span>
+                <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div className="form-group">
+                        <label className="field-label">Открытие</label>
+                        <input
+                            type="time"
+                            className="input"
+                            value={form.work_start || '08:00'}
+                            onChange={(e) => setForm({ ...form, work_start: e.target.value })}
+                        />
                     </div>
-
-                    <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.5 }}>
-                        {hasPin
-                            ? 'ПИН-код настроен. При повторном входе в приложение не нужно каждый раз вводить логин и пароль — достаточно набрать 4 цифры.'
-                            : 'Придумайте 4 цифры, чтобы мгновенно разблокировать приложение на этом устройстве без повторного ввода логина и пароля.'}
-                    </p>
-
-                    <div style={{ display: 'flex', gap: 10 }}>
-                        {hasPin ? (
-                            <>
-                                <button
-                                    type="button"
-                                    className="btn btn-outline"
-                                    onClick={() => setPinModalMode('change')}
-                                    style={{ height: 38, fontSize: 13 }}
-                                >
-                                    Изменить ПИН-код
-                                </button>
-                                <button
-                                    type="button"
-                                    className="btn btn-outline"
-                                    onClick={() => {
-                                        if (window.confirm('Отключить быстрый вход по ПИН-коду?')) {
-                                            removePin();
-                                            showToast('ПИН-код отключён');
-                                        }
-                                    }}
-                                    style={{ height: 38, fontSize: 13, color: 'var(--status-cancelled)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
-                                >
-                                    Отключить
-                                </button>
-                            </>
-                        ) : (
-                            <button
-                                type="button"
-                                className="btn btn-primary"
-                                onClick={() => setPinModalMode('setup')}
-                                style={{ height: 38, fontSize: 13 }}
-                            >
-                                Установить 4-значный ПИН-код
-                            </button>
-                        )}
+                    <div className="form-group">
+                        <label className="field-label">Закрытие</label>
+                        <input
+                            type="time"
+                            className="input"
+                            value={form.work_end || '22:00'}
+                            onChange={(e) => setForm({ ...form, work_end: e.target.value })}
+                        />
                     </div>
                 </div>
 
-                {pinModalMode && (
-                    <PinScreen
-                        mode={pinModalMode}
-                        onComplete={() => {
-                            setPinModalMode(null);
-                            showToast('ПИН-код успешно настроен ✓');
-                        }}
-                        onCancel={() => setPinModalMode(null)}
-                    />
-                )}
+                <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+                    <div className="form-group">
+                        <label className="field-label">Длительность слота (мин)</label>
+                        <input
+                            type="number"
+                            className="input"
+                            min="5"
+                            step="5"
+                            value={form.slot_minutes || 30}
+                            onChange={(e) => setForm({ ...form, slot_minutes: Number(e.target.value) })}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label className="field-label">Валюта</label>
+                        <input
+                            className="input"
+                            value={form.currency || '₸'}
+                            onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                        />
+                    </div>
+                </div>
+
+                <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={saving}
+                    style={{ marginTop: 16, height: 42, padding: '0 24px', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                >
+                    <Save size={16} />
+                    {saving ? 'Сохранение...' : 'Сохранить изменения'}
+                </button>
+            </form>
+
+            {/* PIN Code Security Card */}
+            <div className="card" style={{ marginBottom: 24, padding: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 16, color: 'var(--text-main)' }}>
+                        <KeyRound size={18} color="var(--accent)" />
+                        <span>Быстрый вход по ПИН-коду (4 цифры)</span>
+                    </div>
+                    <span className={`badge ${hasPin ? 'badge-done' : 'badge-cancelled'}`}>
+                        {hasPin ? 'Активен' : 'Не установлен'}
+                    </span>
+                </div>
+
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.5 }}>
+                    {hasPin
+                        ? 'ПИН-код настроен. При повторном входе в приложение не нужно каждый раз вводить логин и пароль — достаточно набрать 4 цифры.'
+                        : 'Придумайте 4 цифры, чтобы мгновенно разблокировать приложение на этом устройстве без повторного ввода логина и пароля.'}
+                </p>
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                    {hasPin ? (
+                        <>
+                            <button
+                                type="button"
+                                className="btn btn-outline"
+                                onClick={() => setPinModalMode('change')}
+                                style={{ height: 38, fontSize: 13 }}
+                            >
+                                Изменить ПИН-код
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-outline"
+                                onClick={() => {
+                                    if (window.confirm('Отключить быстрый вход по ПИН-коду?')) {
+                                        removePin();
+                                        showToast('ПИН-код отключён');
+                                    }
+                                }}
+                                style={{ height: 38, fontSize: 13, color: 'var(--status-cancelled)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                            >
+                                Отключить
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={() => setPinModalMode('setup')}
+                            style={{ height: 38, fontSize: 13 }}
+                        >
+                            Установить 4-значный ПИН-код
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {pinModalMode && (
+                <PinScreen
+                    mode={pinModalMode}
+                    onComplete={() => {
+                        setPinModalMode(null);
+                        showToast('ПИН-код успешно настроен ✓');
+                    }}
+                    onCancel={() => setPinModalMode(null)}
+                />
+            )}
         </div>
     );
 }
-

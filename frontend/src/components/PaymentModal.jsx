@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
     Wallet, 
     Check, 
@@ -12,17 +12,60 @@ import {
     User,
     Copy,
     Smartphone,
-    Banknote
+    Banknote,
+    Smile,
+    Flame,
+    Coffee,
+    Wind,
+    Zap,
+    Crown,
+    Heart,
+    Shield,
+    Star,
+    Award,
+    CheckCircle2
 } from 'lucide-react';
 import { servicesApi, sharedSettingsApi, adminBookingsApi, barberApi } from '../api';
 import { formatMoney, formatDate } from '../utils';
 import { useToast } from './Toast';
 
-const EXTRA_SERVICES = [
-    { key: 'hair_wash', label: 'Мытьё', icon: Droplets, priceKey: 'price_hair_wash' },
-    { key: 'beard',     label: 'Борода', icon: Scissors, priceKey: 'price_beard' },
-    { key: 'mask',      label: 'Маска',  icon: Sparkles, priceKey: 'price_mask' },
-];
+const ICON_MAP = {
+    Droplets,
+    Sparkles,
+    Smile,
+    Flame,
+    Scissors,
+    Coffee,
+    Wind,
+    Zap,
+    Crown,
+    Heart,
+    Shield,
+    Star,
+    Award,
+    CheckCircle2
+};
+
+function getExtrasFromSettings(st) {
+    if (st && st.extra_services_json) {
+        try {
+            const parsed = JSON.parse(st.extra_services_json);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed.map((item, idx) => ({
+                    key: item.id || `extra_${idx}`,
+                    label: item.name,
+                    icon: item.icon || 'Sparkles',
+                    price: Number(item.price) || 0
+                }));
+            }
+        } catch (_) {}
+    }
+    return [
+        { key: 'extra_wash', label: 'Мытьё', icon: 'Droplets', price: st?.price_hair_wash ?? 500 },
+        { key: 'extra_beard', label: 'Борода', icon: 'Scissors', price: st?.price_beard ?? 1000 },
+        { key: 'extra_mask', label: 'Маска', icon: 'Smile', price: st?.price_mask ?? 800 },
+    ];
+}
 
 export default function PaymentModal({ booking, onClose, onSuccess, role = 'admin' }) {
     const showToast = useToast();
@@ -35,6 +78,8 @@ export default function PaymentModal({ booking, onClose, onSuccess, role = 'admi
     const [isCustomAmount, setIsCustomAmount] = useState(false);
     const [loading, setLoading] = useState(true);
     const [paying, setPaying] = useState(false);
+
+    const extrasList = useMemo(() => getExtrasFromSettings(settings), [settings]);
 
     useEffect(() => {
         loadData();
@@ -64,11 +109,12 @@ export default function PaymentModal({ booking, onClose, onSuccess, role = 'admi
             setSelectedExtras(initialExtras);
 
             // Calculate initial amount
+            const dynamicExtras = getExtrasFromSettings(st);
             const matchedService = (srvs || []).find(s => String(s.id) === String(initialServiceId));
             const basePrice = matchedService ? matchedService.price : (booking.price || 0);
             const extrasPrice = initialExtras.reduce((sum, key) => {
-                const item = EXTRA_SERVICES.find(e => e.key === key);
-                return sum + (item && st[item.priceKey] ? st[item.priceKey] : 0);
+                const item = dynamicExtras.find(e => e.key === key || e.key === `extra_${key}`);
+                return sum + (item ? item.price : 0);
             }, 0);
             const computed = basePrice + extrasPrice;
 
@@ -90,12 +136,13 @@ export default function PaymentModal({ booking, onClose, onSuccess, role = 'admi
         }
     }
 
-    function calculateCatalogTotal(srvId, extrasList) {
+    function calculateCatalogTotal(srvId, nextExtrasList, currentSettings = settings) {
         const matchedService = services.find(s => String(s.id) === String(srvId));
         const basePrice = matchedService ? matchedService.price : (booking.price || 0);
-        const extrasPrice = (extrasList || []).reduce((sum, key) => {
-            const item = EXTRA_SERVICES.find(e => e.key === key);
-            return sum + (item && settings[item.priceKey] ? settings[item.priceKey] : 0);
+        const dynamicExtras = getExtrasFromSettings(currentSettings);
+        const extrasPrice = (nextExtrasList || []).reduce((sum, key) => {
+            const item = dynamicExtras.find(e => e.key === key || e.key === `extra_${key}`);
+            return sum + (item ? item.price : 0);
         }, 0);
         return basePrice + extrasPrice;
     }
@@ -161,18 +208,17 @@ export default function PaymentModal({ booking, onClose, onSuccess, role = 'admi
                     service_id: serviceIdNum,
                     extra_services: selectedExtras,
                     payment_method: payMethod,
-                    is_paid: true,
-                    status: 'done',
-                    total_paid: finalAmount
+                    total_paid: finalAmount,
+                    status: 'done'
                 });
             }
 
-            showToast(`Оплата принята (${formatMoney(finalAmount)}) ✓`);
+            showToast('Оплата успешно зафиксирована ✓');
             if (onSuccess) onSuccess();
-            onClose();
+            if (onClose) onClose();
         } catch (err) {
             console.error('Payment error:', err);
-            showToast(err.response?.data?.detail || 'Ошибка проведения оплаты', true);
+            showToast(err.response?.data?.detail || 'Ошибка при проведении оплаты', true);
         } finally {
             setPaying(false);
         }
@@ -181,31 +227,17 @@ export default function PaymentModal({ booking, onClose, onSuccess, role = 'admi
     const currentCatalogTotal = calculateCatalogTotal(selectedServiceId, selectedExtras);
 
     return (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="modal-box" style={{ maxWidth: 460 }}>
-                {/* Header */}
-                <div className="modal-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{
-                            width: 44, height: 44, borderRadius: 12,
-                            background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
-                            border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'var(--green)', flexShrink: 0
-                        }}>
-                            <Wallet size={22} />
-                        </div>
-                        <div>
-                            <h2 style={{ margin: 0, fontSize: 18 }}>Оплата и завершение</h2>
-                            <div className="modal-subtitle" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                                <span>{booking.client_name}</span>
-                                {booking.time && (
-                                    <>
-                                        <span>·</span>
-                                        <span>{booking.date ? formatDate(booking.date) : ''} {booking.time?.slice(0, 5)}</span>
-                                    </>
-                                )}
-                            </div>
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose && onClose()}>
+            <div className="modal-box" style={{ maxWidth: 440, padding: '24px 22px' }}>
+                <div className="modal-header" style={{ marginBottom: 16 }}>
+                    <div>
+                        <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 18, fontWeight: 800 }}>
+                            <Wallet size={20} color="var(--green)" />
+                            <span>Оплата и завершение</span>
+                        </h2>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span>Клиент: <strong style={{ color: 'var(--text-main)' }}>{booking.client_name}</strong></span>
+                            {booking.client_phone && <span>· {booking.client_phone}</span>}
                         </div>
                     </div>
                     <button className="modal-close" onClick={onClose}><X size={18} /></button>
@@ -213,7 +245,7 @@ export default function PaymentModal({ booking, onClose, onSuccess, role = 'admi
 
                 {loading ? (
                     <div style={{ padding: '30px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
-                        Загрузка тарифов и услуг...
+                        Загрузка каталога услуг...
                     </div>
                 ) : (
                     <form onSubmit={handleConfirmPay}>
@@ -230,21 +262,24 @@ export default function PaymentModal({ booking, onClose, onSuccess, role = 'admi
                                             key={s.id}
                                             onClick={() => handleServiceSelect(String(s.id))}
                                             style={{
-                                                padding: '10px 14px',
-                                                borderRadius: 'var(--radius-md)',
-                                                cursor: 'pointer',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'space-between',
+                                                padding: '10px 14px',
+                                                borderRadius: 'var(--radius-sm)',
+                                                cursor: 'pointer',
                                                 border: isSelected ? '1.5px solid var(--green)' : '1px solid var(--border)',
-                                                background: isSelected ? 'rgba(var(--green-rgb, 74, 222, 128), 0.08)' : 'var(--bg-card)',
+                                                background: isSelected ? 'rgba(var(--green-rgb, 74, 222, 128), 0.12)' : 'var(--bg-card)',
                                                 transition: 'all 0.15s ease'
                                             }}
                                         >
-                                            <div style={{ fontWeight: 600, fontSize: 13, color: isSelected ? 'var(--green)' : 'var(--text-main)' }}>
-                                                {s.name}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <Scissors size={15} color={isSelected ? 'var(--green)' : 'var(--text-muted)'} />
+                                                <span style={{ fontSize: 13, fontWeight: isSelected ? 700 : 500, color: 'var(--text-main)' }}>
+                                                    {s.name}
+                                                </span>
                                             </div>
-                                            <div style={{ fontWeight: 700, fontSize: 13 }}>
+                                            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>
                                                 {formatMoney(s.price)}
                                             </div>
                                         </div>
@@ -252,53 +287,55 @@ export default function PaymentModal({ booking, onClose, onSuccess, role = 'admi
                                 })}
                                 {services.length === 0 && (
                                     <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: 10, background: 'var(--bg-card)', borderRadius: 8, textAlign: 'center' }}>
-                                        Список услуг пуст
+                                        Услуги не найдены
                                     </div>
                                 )}
                             </div>
                         </div>
 
                         {/* 2. Extra Services */}
-                        <div style={{ marginBottom: 18 }}>
-                            <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                Дополнительные услуги
-                            </label>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                                {EXTRA_SERVICES.map((item) => {
-                                    const isActive = selectedExtras.includes(item.key);
-                                    const extraPrice = settings[item.priceKey] || 0;
-                                    const IconComponent = item.icon;
-                                    return (
-                                        <div
-                                            key={item.key}
-                                            onClick={() => toggleExtra(item.key)}
-                                            style={{
-                                                padding: '10px 6px',
-                                                borderRadius: 'var(--radius-md)',
-                                                cursor: 'pointer',
-                                                textAlign: 'center',
-                                                border: isActive ? '1.5px solid var(--green)' : '1px solid var(--border)',
-                                                background: isActive ? 'rgba(var(--green-rgb, 74, 222, 128), 0.1)' : 'var(--bg-card)',
-                                                userSelect: 'none',
-                                                transition: 'all 0.15s ease'
-                                            }}
-                                        >
-                                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
-                                                <IconComponent size={18} color={isActive ? 'var(--green)' : 'var(--text-muted)'} />
-                                            </div>
-                                            <div style={{ fontSize: 11, fontWeight: 600, color: isActive ? 'var(--green)' : 'var(--text-main)' }}>
-                                                {item.label}
-                                            </div>
-                                            {extraPrice > 0 && (
-                                                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
-                                                    +{extraPrice}₸
+                        {extrasList.length > 0 && (
+                            <div style={{ marginBottom: 18 }}>
+                                <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Дополнительные услуги
+                                </label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 8 }}>
+                                    {extrasList.map((item) => {
+                                        const isActive = selectedExtras.includes(item.key);
+                                        const extraPrice = item.price;
+                                        const IconComponent = ICON_MAP[item.icon] || Sparkles;
+                                        return (
+                                            <div
+                                                key={item.key}
+                                                onClick={() => toggleExtra(item.key)}
+                                                style={{
+                                                    padding: '10px 6px',
+                                                    borderRadius: 'var(--radius-md)',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center',
+                                                    border: isActive ? '1.5px solid var(--green)' : '1px solid var(--border)',
+                                                    background: isActive ? 'rgba(var(--green-rgb, 74, 222, 128), 0.1)' : 'var(--bg-card)',
+                                                    userSelect: 'none',
+                                                    transition: 'all 0.15s ease'
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+                                                    <IconComponent size={18} color={isActive ? 'var(--green)' : 'var(--text-muted)'} />
                                                 </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
+                                                <div style={{ fontSize: 11, fontWeight: 600, color: isActive ? 'var(--green)' : 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.label}>
+                                                    {item.label}
+                                                </div>
+                                                {extraPrice > 0 && (
+                                                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                                                        +{extraPrice}₸
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* 3. Editable Final Amount (Barber can change by discretion) */}
                         <div style={{
@@ -580,4 +617,3 @@ export default function PaymentModal({ booking, onClose, onSuccess, role = 'admi
         </div>
     );
 }
-
