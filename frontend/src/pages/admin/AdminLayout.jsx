@@ -1,17 +1,15 @@
 /**
  * pages/admin/AdminLayout.jsx
  * ------------------------------------------------------------
- * Admin profile: записи клиентов, барберы, отчёт, выплаты,
- * настройки, услуги.
+ * Admin profile: записи клиентов, отчёт, настройки.
  * ------------------------------------------------------------
  */
 import { Outlet } from 'react-router-dom';
-import { Calendar, Users, BarChart3, Wallet, Scissors, Settings, History } from 'lucide-react';
+import { Calendar, BarChart3, Settings } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 
 const NAV_ITEMS = [
     { to: '/admin/bookings', icon: <Calendar size={18} />, label: 'Записи' },
-    { to: '/admin/clients', icon: <Users size={18} />, label: 'Клиенты' },
     { to: '/admin/reports', icon: <BarChart3 size={18} />, label: 'Отчёт' },
     { to: '/admin/settings', icon: <Settings size={18} />, label: 'Настройки' },
 ];

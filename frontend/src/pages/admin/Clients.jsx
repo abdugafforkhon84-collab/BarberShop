@@ -217,23 +217,91 @@ export default function AdminClients() {
                 </button>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-4" style={{ marginBottom: 20 }}>
-                <div className="card stat-card">
-                    <div className="label">Всего клиентов</div>
-                    <div className="value green">{totalClientsCount}</div>
+            {/* KPI Cards (2x2 Compact Cube Design) */}
+            <div className="kpi-cube-grid">
+                <div className="card kpi-cube">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <div style={{
+                            width: 34, height: 34, borderRadius: 10,
+                            background: 'rgba(51, 209, 122, 0.12)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: 'var(--green)'
+                        }}>
+                            <Users size={18} />
+                        </div>
+                    </div>
+                    <div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--green)', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+                            {totalClientsCount}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
+                            Всего клиентов
+                        </div>
+                    </div>
                 </div>
-                <div className="card stat-card">
-                    <div className="label">Постоянных (2+ визита)</div>
-                    <div className="value">{regularClientsCount}</div>
+
+                <div className="card kpi-cube">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <div style={{
+                            width: 34, height: 34, borderRadius: 10,
+                            background: 'rgba(59, 130, 246, 0.12)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: '#3b82f6'
+                        }}>
+                            <UserCheck size={18} />
+                        </div>
+                        <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>2+ визита</span>
+                    </div>
+                    <div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+                            {regularClientsCount}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
+                            Постоянных
+                        </div>
+                    </div>
                 </div>
-                <div className="card stat-card">
-                    <div className="label">Суммарный доход</div>
-                    <div className="value green">{totalRevenue.toLocaleString()} ₸</div>
+
+                <div className="card kpi-cube">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <div style={{
+                            width: 34, height: 34, borderRadius: 10,
+                            background: 'rgba(51, 209, 122, 0.12)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: 'var(--green)'
+                        }}>
+                            <DollarSign size={18} />
+                        </div>
+                    </div>
+                    <div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--green)', letterSpacing: '-0.02em', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {totalRevenue.toLocaleString()} ₸
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
+                            Суммарный доход
+                        </div>
+                    </div>
                 </div>
-                <div className="card stat-card">
-                    <div className="label">Средний чек</div>
-                    <div className="value">{avgCheck.toLocaleString()} ₸</div>
+
+                <div className="card kpi-cube">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <div style={{
+                            width: 34, height: 34, borderRadius: 10,
+                            background: 'rgba(245, 158, 11, 0.12)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: 'var(--status-pending)'
+                        }}>
+                            <Clock size={18} />
+                        </div>
+                    </div>
+                    <div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {avgCheck.toLocaleString()} ₸
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
+                            Средний чек
+                        </div>
+                    </div>
                 </div>
             </div>
 

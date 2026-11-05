@@ -200,80 +200,88 @@ export default function AdminReports() {
 
             {/* Presets & Filter Panel */}
             {showFilters && (
-            <div className="card" style={{ padding: 18, marginBottom: 20, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
-                    
-                    {/* Presets */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, marginRight: 4 }}>
-                            <CalendarDays size={14} /> Период:
-                        </span>
-                        <button
-                            type="button"
-                            className="btn btn-outline"
-                            style={{ height: 36, padding: '0 12px', fontSize: 13, borderRadius: 'var(--radius-sm)' }}
-                            onClick={() => applyPreset('today')}
-                        >
-                            Сегодня
-                        </button>
-                        <button
-                            type="button"
-                            className="btn btn-outline"
-                            style={{ height: 36, padding: '0 12px', fontSize: 13, borderRadius: 'var(--radius-sm)' }}
-                            onClick={() => applyPreset('week')}
-                        >
-                            Неделя
-                        </button>
-                        <button
-                            type="button"
-                            className="btn btn-outline"
-                            style={{ height: 36, padding: '0 12px', fontSize: 13, borderRadius: 'var(--radius-sm)' }}
-                            onClick={() => applyPreset('month')}
-                        >
-                            Месяц
-                        </button>
+                <div className="card" style={{ padding: '14px 16px', marginBottom: 16, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
+                    {/* Period Presets: 3 equal buttons full width */}
+                    <div style={{ marginBottom: 12 }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <CalendarDays size={13} /> Быстрый выбор периода
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                            <button
+                                type="button"
+                                className="btn btn-outline"
+                                style={{ height: 34, fontSize: 12, padding: 0, justifyContent: 'center' }}
+                                onClick={() => applyPreset('today')}
+                            >
+                                Сегодня
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-outline"
+                                style={{ height: 34, fontSize: 12, padding: 0, justifyContent: 'center' }}
+                                onClick={() => applyPreset('week')}
+                            >
+                                Неделя
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-outline"
+                                style={{ height: 34, fontSize: 12, padding: 0, justifyContent: 'center' }}
+                                onClick={() => applyPreset('month')}
+                            >
+                                Месяц
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Date Picker Form */}
-                    <form onSubmit={handleFilter} style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>С</label>
-                            <input
-                                type="date"
-                                className="form-control"
-                                style={{ height: 32, padding: '0 8px', fontSize: 12, width: 130, borderRadius: 'var(--radius-sm)' }}
-                                value={dateFrom}
-                                onChange={(e) => setDateFrom(e.target.value)}
-                            />
+                    {/* Date Picker & Barber Filter Form */}
+                    <form onSubmit={handleFilter} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                            <div>
+                                <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3, display: 'block' }}>Дата с</label>
+                                <input
+                                    type="date"
+                                    className="input"
+                                    style={{ height: 34, padding: '0 8px', fontSize: 12, width: '100%' }}
+                                    value={dateFrom}
+                                    onChange={(e) => setDateFrom(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3, display: 'block' }}>Дата по</label>
+                                <input
+                                    type="date"
+                                    className="input"
+                                    style={{ height: 34, padding: '0 8px', fontSize: 12, width: '100%' }}
+                                    value={dateTo}
+                                    onChange={(e) => setDateTo(e.target.value)}
+                                />
+                            </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>По</label>
-                            <input
-                                type="date"
-                                className="form-control"
-                                style={{ height: 32, padding: '0 8px', fontSize: 12, width: 130, borderRadius: 'var(--radius-sm)' }}
-                                value={dateTo}
-                                onChange={(e) => setDateTo(e.target.value)}
-                            />
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Барбер</label>
-                            <select
-                                className="form-control"
-                                style={{ height: 32, padding: '0 8px', fontSize: 12, borderRadius: 'var(--radius-sm)' }}
-                                value={selectedBarber}
-                                onChange={(e) => setSelectedBarber(e.target.value)}
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'flex-end' }}>
+                            <div>
+                                <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3, display: 'block' }}>Сотрудник</label>
+                                <select
+                                    className="select"
+                                    style={{ height: 36, padding: '0 10px', fontSize: 12, width: '100%' }}
+                                    value={selectedBarber}
+                                    onChange={(e) => setSelectedBarber(e.target.value)}
+                                >
+                                    <option value="">Все сотрудники</option>
+                                    {barbers.map(b => <option key={b.id} value={b.id}>{b.full_name}</option>)}
+                                </select>
+                            </div>
+                            <button 
+                                type="submit" 
+                                className="btn btn-primary" 
+                                style={{ height: 36, padding: '0 16px', fontSize: 13, fontWeight: 600, minWidth: 100 }}
                             >
-                                <option value="">Все барберы</option>
-                                {barbers.map(b => <option key={b.id} value={b.id}>{b.full_name}</option>)}
-                            </select>
+                                Применить
+                            </button>
                         </div>
-                        <button type="submit" className="btn btn-primary" style={{ height: 32, fontSize: 12, padding: '0 12px', borderRadius: 'var(--radius-sm)' }}>
-                            Применить
-                        </button>
                     </form>
                 </div>
-            </div>
             )}
 
             {loading ? (
@@ -282,45 +290,92 @@ export default function AdminReports() {
                 </div>
             ) : summary && (
                 <>
-                    {/* Top Key Metrics */}
-                    <div className="grid grid-4" style={{ marginBottom: 20, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
-                        <div className="card stat-card" style={{ padding: 18, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--green)', marginBottom: 6 }}>
-                                <TrendingUp size={20} />
-                                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Общая выручка</span>
+                    {/* Top Key Metrics (2x2 Compact Cube Design) */}
+                    <div className="kpi-cube-grid">
+                        <div className="card kpi-cube">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                                <div style={{
+                                    width: 34, height: 34, borderRadius: 10,
+                                    background: 'rgba(51, 209, 122, 0.12)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--green)'
+                                }}>
+                                    <TrendingUp size={18} />
+                                </div>
                             </div>
-                            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--green)' }}>
-                                {formatMoney(summary.revenue)}
-                            </div>
-                        </div>
-
-                        <div className="card stat-card" style={{ padding: 18, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#3d8bfd', marginBottom: 6 }}>
-                                <CheckCircle2 size={20} />
-                                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Обслужено клиентов</span>
-                            </div>
-                            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-main)' }}>
-                                {summary.done_count} <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>({summary.clients_count} уникальных)</span>
-                            </div>
-                        </div>
-
-                        <div className="card stat-card" style={{ padding: 18, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#b98af0', marginBottom: 6 }}>
-                                <Receipt size={20} />
-                                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Средний чек</span>
-                            </div>
-                            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-main)' }}>
-                                {formatMoney(summary.average_check)}
+                            <div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--green)', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+                                    {formatMoney(summary.revenue)}
+                                </div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
+                                    Общая выручка
+                                </div>
                             </div>
                         </div>
 
-                        <div className="card stat-card" style={{ padding: 18, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--status-pending)', marginBottom: 6 }}>
-                                <Clock size={20} />
-                                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Ожидают / Отменено</span>
+                        <div className="card kpi-cube">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                                <div style={{
+                                    width: 34, height: 34, borderRadius: 10,
+                                    background: 'rgba(61, 139, 253, 0.12)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: '#3d8bfd'
+                                }}>
+                                    <CheckCircle2 size={18} />
+                                </div>
+                                <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>
+                                    {summary.clients_count} уник.
+                                </span>
                             </div>
-                            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-main)' }}>
-                                {summary.pending_count} <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>ожид.</span> · <span style={{ color: 'var(--status-cancelled)' }}>{summary.cancelled_count} отмен.</span>
+                            <div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+                                    {summary.done_count}
+                                </div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
+                                    Клиентов
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="card kpi-cube">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                                <div style={{
+                                    width: 34, height: 34, borderRadius: 10,
+                                    background: 'rgba(185, 138, 240, 0.12)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: '#b98af0'
+                                }}>
+                                    <Receipt size={18} />
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+                                    {formatMoney(summary.average_check)}
+                                </div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
+                                    Средний чек
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="card kpi-cube">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                                <div style={{
+                                    width: 34, height: 34, borderRadius: 10,
+                                    background: 'rgba(245, 158, 11, 0.12)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--status-pending)'
+                                }}>
+                                    <Clock size={18} />
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+                                    {summary.pending_count} <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>ожид.</span> · <span style={{ color: 'var(--status-cancelled)' }}>{summary.cancelled_count}</span> <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>отмен.</span>
+                                </div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600 }}>
+                                    Ожидают / Отменено
+                                </div>
                             </div>
                         </div>
                     </div>
