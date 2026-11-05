@@ -75,10 +75,12 @@ export default function AdminClients() {
     }
 
     function openEditModal(client) {
+        const rawPhone = client.phone || '';
+        const cleanPhone = rawPhone.startsWith('no-phone-') ? '' : rawPhone;
         setForm({
             id: client.id,
             name: client.name || '',
-            phone: client.phone || '',
+            phone: cleanPhone,
             notes: client.notes || ''
         });
         setModalOpen(true);
@@ -86,8 +88,8 @@ export default function AdminClients() {
 
     async function handleSaveClient(e) {
         e.preventDefault();
-        if (!form.name.trim() || !form.phone.trim()) {
-            showToast('Укажите имя и телефон клиента', true);
+        if (!form.name.trim()) {
+            showToast('Укажите имя клиента', true);
             return;
         }
 
@@ -353,24 +355,33 @@ export default function AdminClients() {
                                             </span>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4, fontSize: 12, color: 'var(--text-muted)' }}>
-                                            <a 
-                                                href={`tel:${client.phone}`}
-                                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'inherit' }}
-                                                title="Позвонить"
-                                            >
-                                                <Phone size={12} color="var(--green)" />
-                                                <span>{client.phone}</span>
-                                            </a>
-                                            <a 
-                                                href={getWhatsAppLink(client.phone)} 
-                                                target="_blank" 
-                                                rel="noreferrer"
-                                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#25D366' }}
-                                                title="Написать в WhatsApp"
-                                            >
-                                                <MessageCircle size={12} />
-                                                <span>WhatsApp</span>
-                                            </a>
+                                            {client.phone && !client.phone.startsWith('no-phone-') ? (
+                                                <>
+                                                    <a 
+                                                        href={`tel:${client.phone}`}
+                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'inherit' }}
+                                                        title="Позвонить"
+                                                    >
+                                                        <Phone size={12} color="var(--green)" />
+                                                        <span>{client.phone}</span>
+                                                    </a>
+                                                    <a 
+                                                        href={getWhatsAppLink(client.phone)} 
+                                                        target="_blank" 
+                                                        rel="noreferrer"
+                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#25D366' }}
+                                                        title="Написать в WhatsApp"
+                                                    >
+                                                        <MessageCircle size={12} />
+                                                        <span>WhatsApp</span>
+                                                    </a>
+                                                </>
+                                            ) : (
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--text-dim)' }}>
+                                                    <Phone size={12} color="var(--text-dim)" />
+                                                    <span>Не указан</span>
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -477,12 +488,11 @@ export default function AdminClients() {
                             </div>
 
                             <div className="form-group">
-                                <label>Номер телефона</label>
+                                <label>Номер телефона (необязательно)</label>
                                 <input
                                     className="input"
                                     type="tel"
-                                    required
-                                    placeholder="+7 (777) 123-45-67"
+                                    placeholder="+7 (777) 123-45-67 или оставьте пустым"
                                     value={form.phone}
                                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
                                 />
@@ -541,7 +551,7 @@ export default function AdminClients() {
                                 <div>
                                     <h2 style={{ margin: 0, fontSize: 18 }}>История: {selectedClient.name}</h2>
                                     <div className="modal-subtitle">
-                                        {selectedClient.phone} · Всего визитов: {selectedClient.visits || 0}
+                                        {(selectedClient.phone && !selectedClient.phone.startsWith('no-phone-')) ? selectedClient.phone : 'Телефон не указан'} · Всего визитов: {selectedClient.visits || 0}
                                     </div>
                                 </div>
                             </div>

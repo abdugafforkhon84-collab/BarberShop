@@ -30,8 +30,9 @@ def list_clients(search: Optional[str] = None, db: Session = Depends(get_tenant_
     for c in clients:
         done_bookings = [b for b in c.bookings if b.status == models.BookingStatus.done]
         last_visit = max((b.date for b in done_bookings), default=None)
+        display_phone = "" if (not c.phone or c.phone.startswith("no-phone-")) else c.phone
         result.append(schemas.ClientStats(
-            id=c.id, name=c.name, phone=c.phone, created_at=c.created_at,
+            id=c.id, name=c.name, phone=display_phone, created_at=c.created_at,
             visits=len(done_bookings),
             total_spent=sum(b.price for b in done_bookings),
             last_visit=last_visit,
@@ -41,13 +42,21 @@ def list_clients(search: Optional[str] = None, db: Session = Depends(get_tenant_
 
 @router.post("", response_model=schemas.ClientOut)
 def create_client(payload: schemas.ClientCreate, db: Session = Depends(get_tenant_db)):
-    if db.query(models.Client).filter(models.Client.phone == payload.phone).first():
-        raise HTTPException(status_code=400, detail="Клиент с таким телефоном уже существует")
-    client = models.Client(**payload.model_dump())
+    clean_name = payload.name.strip()
+    clean_phone = (payload.phone or "").strip()
+    if clean_phone and not clean_phone.startswith("no-phone-"):
+        if db.query(models.Client).filter(models.Client.phone == clean_phone).first():
+            raise HTTPException(status_code=400, detail="Клиент с таким телефоном уже существует")
+        phone_to_save = clean_phone
+    else:
+        import uuid
+        phone_to_save = f"no-phone-{uuid.uuid4().hex[:8]}"
+    client = models.Client(name=clean_name, phone=phone_to_save)
     db.add(client)
     db.commit()
     db.refresh(client)
-    return client
+    display_phone = "" if client.phone.startswith("no-phone-") else client.phone
+    return schemas.ClientOut(id=client.id, name=client.name, phone=display_phone, created_at=client.created_at)
 
 
 @router.put("/{client_id}", response_model=schemas.ClientOut)
@@ -55,11 +64,23 @@ def update_client(client_id: int, payload: schemas.ClientUpdate, db: Session = D
     client = db.query(models.Client).get(client_id)
     if not client:
         raise HTTPException(status_code=404, detail="Клиент не найден")
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(client, field, value)
+    data = payload.model_dump(exclude_unset=True)
+    if "name" in data and data["name"]:
+        client.name = data["name"].strip()
+    if "phone" in data:
+        p = (data["phone"] or "").strip()
+        if p and not p.startswith("no-phone-"):
+            existing = db.query(models.Client).filter(models.Client.phone == p, models.Client.id != client_id).first()
+            if existing:
+                raise HTTPException(status_code=400, detail="Клиент с таким телефоном уже существует")
+            client.phone = p
+        elif not client.phone or not client.phone.startswith("no-phone-"):
+            import uuid
+            client.phone = f"no-phone-{uuid.uuid4().hex[:8]}"
     db.commit()
     db.refresh(client)
-    return client
+    display_phone = "" if client.phone.startswith("no-phone-") else client.phone
+    return schemas.ClientOut(id=client.id, name=client.name, phone=display_phone, created_at=client.created_at)
 
 
 @router.delete("/{client_id}")

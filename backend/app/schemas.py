@@ -170,7 +170,7 @@ class BarberOut(UserOut):
 # ---------------------------------------------------------------- Clients
 class ClientCreate(BaseModel):
     name: str
-    phone: str
+    phone: Optional[str] = ""
 
 
 class ClientUpdate(BaseModel):

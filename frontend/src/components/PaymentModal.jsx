@@ -237,7 +237,7 @@ export default function PaymentModal({ booking, onClose, onSuccess, role = 'admi
                         </h2>
                         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
                             <span>Клиент: <strong style={{ color: 'var(--text-main)' }}>{booking.client_name}</strong></span>
-                            {booking.client_phone && <span>· {booking.client_phone}</span>}
+                            {booking.client_phone && !booking.client_phone.startsWith('no-phone-') && <span>· {booking.client_phone}</span>}
                         </div>
                     </div>
                     <button className="modal-close" onClick={onClose}><X size={18} /></button>

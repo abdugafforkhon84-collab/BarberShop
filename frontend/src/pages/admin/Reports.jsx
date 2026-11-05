@@ -325,32 +325,7 @@ export default function AdminReports() {
                         </div>
                     </div>
 
-                    {/* Secondary Metrics */}
-                    <div className="grid grid-2" style={{ marginBottom: 20, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
-                        <div className="card" style={{ padding: 16, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 14 }}>
-                            <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(51, 209, 122, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--green)' }}>
-                                <Scissors size={20} />
-                            </div>
-                            <div>
-                                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Самая популярная услуга</div>
-                                <div style={{ fontSize: 16, fontWeight: 700, marginTop: 2, color: 'var(--text-main)' }}>
-                                    {summary.top_service || 'Нет данных'}
-                                </div>
-                            </div>
-                        </div>
 
-                        <div className="card" style={{ padding: 16, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 14 }}>
-                            <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(61, 139, 253, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3d8bfd' }}>
-                                <Sparkles size={20} />
-                            </div>
-                            <div>
-                                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Лучший барбер периода</div>
-                                <div style={{ fontSize: 16, fontWeight: 700, marginTop: 2, color: 'var(--text-main)' }}>
-                                    {summary.top_barber || 'Нет данных'}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     {/* Chart Card */}
                     <div className="card" style={{ padding: 20, marginBottom: 20, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>

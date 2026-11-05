@@ -407,7 +407,7 @@ export default function BarberCalendar() {
 
                         {/* Info rows */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
-                            <InfoRow label="Телефон" value={b.client_phone} />
+                            <InfoRow label="Телефон" value={(b.client_phone && !b.client_phone.startsWith('no-phone-')) ? b.client_phone : 'Не указан'} />
                             <InfoRow label="Дата и время" value={`${fmtDateRu(b.date)} · ${b.time?.slice(0, 5)}`} />
                             {b.service_name && <InfoRow label="Услуга" value={b.service_name} />}
                             {b.is_paid && (

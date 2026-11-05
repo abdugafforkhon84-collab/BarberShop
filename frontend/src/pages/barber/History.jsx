@@ -234,7 +234,7 @@ export default function BarberHistory() {
                                 <div className="hcard-top">
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div className="hcard-name">{b.client_name}</div>
-                                        <div className="hcard-sub">{b.client_phone}</div>
+                                        <div className="hcard-sub">{(b.client_phone && !b.client_phone.startsWith('no-phone-')) ? b.client_phone : 'Без телефона'}</div>
                                         {b.service_name && <div className="hcard-service" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Scissors size={12} color="var(--text-muted)" /> {b.service_name}</div>}
                                         {b.extra_services?.length > 0 && (
                                             <div className="hcard-service" style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 2 }}>

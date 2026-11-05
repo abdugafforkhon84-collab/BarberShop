@@ -89,7 +89,7 @@ export default function BarberRequests() {
                             <h3>{r.client_name}</h3>
                             {statusBadge(r.status)}
                         </div>
-                        <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 6 }}>{r.client_phone}</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 6 }}>{(r.client_phone && !r.client_phone.startsWith('no-phone-')) ? r.client_phone : 'Телефон не указан'}</p>
                         <p style={{ marginBottom: 4 }}><strong>{r.service_name}</strong> — {formatMoney(r.price)}</p>
                         <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 14 }}>
                             {formatDate(r.date)} в {r.time.slice(0, 5)} · {r.duration} мин

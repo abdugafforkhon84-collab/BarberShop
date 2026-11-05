@@ -244,7 +244,7 @@ export default function AdminBookings() {
                                         onChange={(e) => {
                                             const val = e.target.value;
                                             const match = clientsList.find(c => c.name === val);
-                                            if (match) setForm({ ...form, client_name: val, client_phone: match.phone || form.client_phone });
+                                            if (match) setForm({ ...form, client_name: val, client_phone: (match.phone && !match.phone.startsWith('no-phone-')) ? match.phone : '' });
                                             else setForm({ ...form, client_name: val });
                                         }}
                                         required
