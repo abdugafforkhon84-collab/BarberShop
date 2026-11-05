@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { superadminApi } from '../../api';
 import { useToast } from '../../components/Toast';
-import { Coins, Save, Plus, Trash2, Sparkles, Clock, Check, RotateCcw, AlertCircle } from 'lucide-react';
-import { formatMoney } from '../../utils';
+import { Coins, Save, Plus, Trash2, RotateCcw } from 'lucide-react';
 
 const DEFAULT_TARIFF_PRESETS = [
     { months: 1, price: 0, name: '1 месяц (Пробный период)' },
@@ -119,7 +118,6 @@ export default function SuperadminTariffs() {
 
         setSaving(true);
         try {
-            // Find backwards-compatible fields
             const p1 = tariffs.find(t => t.months === 1)?.price ?? rawSettings?.price_1_month ?? 0;
             const p3 = tariffs.find(t => t.months === 3)?.price ?? rawSettings?.price_3_months ?? 15000;
             const p6 = tariffs.find(t => t.months === 6)?.price ?? rawSettings?.price_6_months ?? 27000;
@@ -159,65 +157,43 @@ export default function SuperadminTariffs() {
     );
 
     return (
-        <div style={{ maxWidth: 840, margin: '0 auto', paddingBottom: 40 }}>
+        <div style={{ maxWidth: 760, margin: '0 auto', paddingBottom: 60 }}>
             {/* Header */}
-            <div className="page-header" style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div className="page-header" style={{ marginBottom: 16 }}>
                 <div>
-                    <h1 style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '1.5rem', margin: 0 }}>
-                        <Coins color="var(--green)" size={24} />
-                        Тарифы платформы
+                    <h1 style={{ display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
+                        <Coins color="var(--green)" size={22} />
+                        Тарифы
                     </h1>
-                    <div className="subtitle" style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 4 }}>
-                        Гибкая настройка периодов подписки (от 1 до 12 месяцев) и стоимости в тенге (₸)
-                    </div>
+                    <div className="subtitle">Сроки подписки и стоимость в тенге (₸)</div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', width: '100%', maxWidth: 360, justifyContent: 'flex-start' }}>
                     <button
                         type="button"
                         className="btn btn-outline"
-                        style={{ height: 40, fontSize: 13, gap: 6 }}
+                        style={{ height: 38, fontSize: 12, gap: 5, flex: 1 }}
                         onClick={handleResetToDefaults}
-                        title="Вернуть стандартные 1, 3, 6, 12 месяцев"
+                        title="Сбросить"
                     >
-                        <RotateCcw size={14} />
+                        <RotateCcw size={13} />
                         По умолчанию
                     </button>
                     <button
                         type="button"
                         className="btn btn-primary"
-                        style={{ height: 40, padding: '0 20px', gap: 8 }}
+                        style={{ height: 38, padding: '0 16px', gap: 6, flex: 1.2 }}
                         onClick={() => handleSave()}
                         disabled={saving}
                     >
-                        <Save size={16} />
-                        {saving ? 'Сохранение...' : 'Сохранить тарифы'}
+                        <Save size={15} />
+                        {saving ? 'Сохранение...' : 'Сохранить'}
                     </button>
                 </div>
             </div>
 
-            {/* Hint Notice */}
-            <div style={{
-                background: 'rgba(51, 209, 122, 0.08)',
-                border: '1px solid rgba(51, 209, 122, 0.25)',
-                borderRadius: 'var(--radius-md)',
-                padding: '14px 18px',
-                marginBottom: 24,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                fontSize: 13,
-                color: 'var(--text-main)'
-            }}>
-                <Sparkles size={18} color="var(--green)" style={{ flexShrink: 0 }} />
-                <span>
-                    Установите цену <strong>0 ₸</strong>, чтобы тариф считался бесплатным пробным периодом.
-                    Все настроенные тарифы будут доступны при создании и продлении барбершопов.
-                </span>
-            </div>
-
-            {/* Tariffs List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
+            {/* Compact Tariffs List (fits in viewport without clipping) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
                 {tariffs.map((t, index) => {
                     const isFree = Number(t.price) === 0;
                     return (
@@ -225,101 +201,110 @@ export default function SuperadminTariffs() {
                             key={t.months}
                             className="card"
                             style={{
-                                display: 'grid',
-                                gridTemplateColumns: '80px 1.4fr 1.2fr auto',
-                                alignItems: 'center',
-                                gap: 16,
-                                padding: '16px 20px',
+                                padding: '10px 12px',
                                 background: 'var(--bg-card)',
                                 border: isFree ? '1px solid rgba(255, 193, 7, 0.4)' : '1px solid var(--border)',
-                                borderRadius: 'var(--radius-md)',
+                                borderRadius: 12,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 6,
                                 transition: 'all 0.15s ease'
                             }}
                         >
-                            {/* Duration Badge */}
-                            <div style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
-                                border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
-                                borderRadius: 12,
-                                height: 52,
-                                color: 'var(--green)',
-                                fontWeight: 800,
-                            }}>
-                                <span style={{ fontSize: 18, lineHeight: 1 }}>{t.months}</span>
-                                <span style={{ fontSize: 10, textTransform: 'uppercase', opacity: 0.85 }}>мес</span>
-                            </div>
-
-                            {/* Name Input */}
-                            <div className="form-group" style={{ margin: 0 }}>
-                                <label style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>
-                                    Название тарифа
-                                </label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    value={t.name || ''}
-                                    placeholder={defaultNameForMonth(t.months)}
-                                    onChange={(e) => handleTariffChange(index, 'name', e.target.value)}
-                                    style={{ height: 38, fontSize: 13 }}
-                                />
-                            </div>
-
-                            {/* Price Input */}
-                            <div className="form-group" style={{ margin: 0 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                    <label style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>
-                                        Стоимость (₸)
-                                    </label>
+                            {/* Card Top: Duration Badge + Free status / toggle + Delete */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span style={{
+                                        background: 'rgba(var(--green-rgb, 74, 222, 128), 0.12)',
+                                        border: '1px solid rgba(var(--green-rgb, 74, 222, 128), 0.25)',
+                                        color: 'var(--green)',
+                                        fontWeight: 800,
+                                        fontSize: 12,
+                                        padding: '2px 8px',
+                                        borderRadius: 6
+                                    }}>
+                                        {t.months} {t.months === 1 ? 'мес' : t.months >= 2 && t.months <= 4 ? 'мес' : 'мес'}
+                                    </span>
                                     {isFree ? (
-                                        <span className="badge" style={{ background: 'rgba(255, 193, 7, 0.15)', color: '#ffc107', fontSize: 10, padding: '2px 6px', borderRadius: 6 }}>
+                                        <span style={{
+                                            background: 'rgba(255, 193, 7, 0.15)',
+                                            color: '#ffc107',
+                                            fontWeight: 700,
+                                            fontSize: 11,
+                                            padding: '2px 6px',
+                                            borderRadius: 6
+                                        }}>
                                             Пробный (0 ₸)
                                         </span>
                                     ) : (
                                         <button
                                             type="button"
                                             onClick={() => handleTariffChange(index, 'price', 0)}
-                                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, padding: 0 }}
+                                            style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: 'var(--text-muted)',
+                                                cursor: 'pointer',
+                                                fontSize: 11,
+                                                padding: '2px 4px',
+                                                textDecoration: 'underline'
+                                            }}
                                         >
-                                            Сделать пробным
+                                            Сделать 0 ₸
                                         </button>
                                     )}
                                 </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => handleRemoveTariff(t.months)}
+                                    title="Удалить тариф"
+                                    style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: 'var(--status-cancelled)',
+                                        cursor: 'pointer',
+                                        padding: '4px 6px',
+                                        borderRadius: 6
+                                    }}
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+
+                            {/* Card Bottom: Name Input + Price Input with ₸ */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 115px', gap: 8, alignItems: 'center' }}>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={t.name || ''}
+                                    placeholder={defaultNameForMonth(t.months)}
+                                    onChange={(e) => handleTariffChange(index, 'name', e.target.value)}
+                                    style={{ height: 34, fontSize: 13, padding: '0 10px' }}
+                                />
                                 <div style={{ position: 'relative' }}>
                                     <input
                                         type="number"
-                                        className="form-control"
+                                        className="input"
                                         value={t.price}
                                         min="0"
                                         step="500"
                                         onChange={(e) => handleTariffChange(index, 'price', Number(e.target.value))}
-                                        style={{ height: 38, fontSize: 14, fontWeight: 700, paddingRight: 32 }}
+                                        style={{ height: 34, fontSize: 13, fontWeight: 700, padding: '0 24px 0 8px', textAlign: 'right' }}
                                     />
-                                    <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 13, pointerEvents: 'none' }}>
+                                    <span style={{
+                                        position: 'absolute',
+                                        right: 8,
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        color: 'var(--text-muted)',
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                        pointerEvents: 'none'
+                                    }}>
                                         ₸
                                     </span>
                                 </div>
-                            </div>
-
-                            {/* Delete Action */}
-                            <div style={{ display: 'flex', alignItems: 'center', paddingTop: 18 }}>
-                                <button
-                                    type="button"
-                                    className="btn btn-outline"
-                                    onClick={() => handleRemoveTariff(t.months)}
-                                    title="Удалить этот тариф"
-                                    style={{
-                                        color: 'var(--status-cancelled)',
-                                        borderColor: 'rgba(239, 68, 68, 0.25)',
-                                        padding: '8px 10px',
-                                        borderRadius: 8
-                                    }}
-                                >
-                                    <Trash2 size={15} />
-                                </button>
                             </div>
                         </div>
                     );
@@ -328,57 +313,56 @@ export default function SuperadminTariffs() {
 
             {/* Add Tariff Form / Button */}
             {!showAddForm ? (
-                availableMonths.length > 0 ? (
+                availableMonths.length > 0 && (
                     <button
                         type="button"
                         className="btn btn-outline"
                         style={{
                             width: '100%',
-                            padding: '14px',
+                            minHeight: 44,
                             borderStyle: 'dashed',
-                            borderRadius: 'var(--radius-md)',
+                            borderRadius: 12,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: 8,
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: 600,
                             color: 'var(--green)',
                             borderColor: 'rgba(var(--green-rgb, 74, 222, 128), 0.4)'
                         }}
                         onClick={() => setShowAddForm(true)}
                     >
-                        <Plus size={16} /> Добавить тариф (на любой срок 1–12 месяцев)
+                        <Plus size={16} /> Добавить срок (от 1 до 12 мес)
                     </button>
-                ) : (
-                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 12 }}>
-                        Все периоды от 1 до 12 месяцев добавлены.
-                    </div>
                 )
             ) : (
                 <form
                     onSubmit={handleAddTariff}
                     className="card"
                     style={{
-                        padding: 20,
+                        padding: 16,
                         background: 'var(--bg-panel)',
                         border: '1px solid var(--green)',
-                        borderRadius: 'var(--radius-md)'
+                        borderRadius: 12,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12
                     }}
                 >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 15, marginBottom: 14 }}>
-                        <Plus size={18} color="var(--green)" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 14 }}>
+                        <Plus size={16} color="var(--green)" />
                         Новый тариф
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '130px 1.4fr 1.2fr', gap: 14, marginBottom: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
                         <div className="form-group" style={{ margin: 0 }}>
-                            <label style={{ fontSize: 12, marginBottom: 6, display: 'block' }}>Срок (месяцы)</label>
+                            <label style={{ fontSize: 11, marginBottom: 4, display: 'block' }}>Срок (месяцы)</label>
                             <select
-                                className="form-control"
+                                className="select"
                                 value={newMonths}
                                 onChange={(e) => handleMonthsChange(e.target.value)}
-                                style={{ height: 40 }}
+                                style={{ height: 36, width: '100%' }}
                             >
                                 {availableMonths.map(m => (
                                     <option key={m} value={m}>{m} {m === 1 ? 'месяц' : m < 5 ? 'месяца' : 'месяцев'}</option>
@@ -387,69 +371,52 @@ export default function SuperadminTariffs() {
                         </div>
 
                         <div className="form-group" style={{ margin: 0 }}>
-                            <label style={{ fontSize: 12, marginBottom: 6, display: 'block' }}>Название</label>
+                            <label style={{ fontSize: 11, marginBottom: 4, display: 'block' }}>Название</label>
                             <input
                                 type="text"
-                                className="form-control"
+                                className="input"
                                 value={newName}
                                 onChange={(e) => setNewName(e.target.value)}
-                                placeholder="Например: 3 месяца"
-                                style={{ height: 40 }}
+                                placeholder="Например: 2 месяца"
+                                style={{ height: 36, fontSize: 13 }}
                                 required
                             />
                         </div>
 
                         <div className="form-group" style={{ margin: 0 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                <label style={{ fontSize: 12, margin: 0 }}>Цена (₸)</label>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                <label style={{ fontSize: 11, margin: 0 }}>Цена (₸)</label>
                                 <button
                                     type="button"
                                     onClick={() => setNewPrice(0)}
-                                    style={{ background: 'none', border: 'none', color: 'var(--green)', fontSize: 11, cursor: 'pointer', padding: 0 }}
+                                    style={{ background: 'none', border: 'none', color: 'var(--green)', fontSize: 10, cursor: 'pointer', padding: 0 }}
                                 >
                                     0 ₸ (Пробный)
                                 </button>
                             </div>
                             <input
                                 type="number"
-                                className="form-control"
+                                className="input"
                                 value={newPrice}
                                 min="0"
                                 step="500"
                                 onChange={(e) => setNewPrice(e.target.value)}
-                                style={{ height: 40, fontWeight: 700 }}
+                                style={{ height: 36, fontWeight: 700, fontSize: 13 }}
                                 required
                             />
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                        <button type="button" className="btn btn-outline" onClick={() => setShowAddForm(false)}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
+                        <button type="button" className="btn btn-outline" style={{ minHeight: 38, fontSize: 13 }} onClick={() => setShowAddForm(false)}>
                             Отмена
                         </button>
-                        <button type="submit" className="btn btn-primary">
-                            <Plus size={15} /> Добавить в список
+                        <button type="submit" className="btn btn-primary" style={{ minHeight: 38, fontSize: 13 }}>
+                            Добавить тариф
                         </button>
                     </div>
                 </form>
             )}
-
-            {/* Bottom Save bar */}
-            <div style={{ marginTop: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: 20 }}>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                    Всего настроено тарифов: <strong>{tariffs.length}</strong>
-                </div>
-                <button
-                    type="button"
-                    className="btn btn-primary"
-                    style={{ height: 42, padding: '0 24px', fontSize: 14, gap: 8 }}
-                    onClick={() => handleSave()}
-                    disabled={saving}
-                >
-                    <Save size={16} />
-                    {saving ? 'Сохранение...' : 'Сохранить все тарифы'}
-                </button>
-            </div>
         </div>
     );
 }

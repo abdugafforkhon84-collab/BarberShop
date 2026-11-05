@@ -23,7 +23,8 @@ import { useAuth } from '../context/AuthContext';
 const SUPERADMIN_DESKTOP_NAV = [
     { to: '/superadmin/tenants', label: 'Барбершопы', icon: Store },
     { to: '/superadmin/tariffs', label: 'Тарифы', icon: Coins },
-    { to: '/superadmin/dashboard', label: 'Отчёт платформы', icon: LayoutDashboard },
+    { to: '/superadmin/dashboard', label: 'Отчёт', icon: LayoutDashboard },
+    { to: '/superadmin/settings', label: 'Настройки', icon: Settings },
 ];
 
 const ADMIN_DESKTOP_NAV = [

@@ -1233,3 +1233,51 @@ button { font-family: inherit; cursor: pointer; }
     .modal-box { padding: 18px 14px 28px 14px; }
     .day-booking .db-name { font-size: 11px; }
 }
+
+
+/* ---------------- KPI Cube Design (Superadmin & Reports) ---------------- */
+.kpi-cube-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+@media (min-width: 768px) {
+    .kpi-cube-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 14px;
+    }
+}
+.kpi-cube {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    min-height: 106px;
+    transition: transform 0.15s ease;
+}
+.kpi-cube:hover {
+    transform: translateY(-2px);
+}
+
+/* ---------------- One-Handed Mobile Ergonomics ---------------- */
+@media (max-width: 600px) {
+    .main-content {
+        padding: 14px 14px 84px 14px !important;
+    }
+    .page-header {
+        margin-bottom: 16px !important;
+    }
+    .page-header h1 {
+        font-size: 1.25rem !important;
+    }
+    .nav-item {
+        font-size: 10.5px;
+        min-height: 48px;
+    }
+    .nav-item .icon svg {
+        width: 19px;
+        height: 19px;
+    }
+}

@@ -54,23 +54,38 @@ function PlanBadge({ status, plan_end, plan_months, is_trial }) {
 
 function StatCard({ icon, label, value, sub, color }) {
     return (
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, minHeight: 92, padding: '16px 20px' }}>
-            <div style={{
-                width: 48, height: 48, borderRadius: 14,
-                background: color || 'rgba(51,209,122,0.12)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-            }}>
-                {icon}
+        <div className="card kpi-cube">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div style={{
+                    width: 34, height: 34, borderRadius: 10,
+                    background: color || 'rgba(51,209,122,0.12)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                }}>
+                    {icon}
+                </div>
+                {sub && (
+                    <span style={{ fontSize: 10, color: 'var(--text-dim)', textAlign: 'right', lineHeight: 1.15, maxWidth: '62%' }}>
+                        {sub}
+                    </span>
+                )}
             </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 24, fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div>
+                <div style={{ 
+                    fontSize: '1.2rem', 
+                    fontWeight: 800, 
+                    lineHeight: 1.15, 
+                    letterSpacing: '-0.02em', 
+                    color: 'var(--text-main)',
+                    whiteSpace: 'nowrap', 
+                    overflow: 'hidden', 
+                    textOverflow: 'ellipsis' 
+                }}>
                     {value}
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, fontWeight: 500 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontWeight: 600, lineHeight: 1.2 }}>
                     {label}
                 </div>
-                {sub && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>{sub}</div>}
             </div>
         </div>
     );
@@ -172,40 +187,35 @@ export default function SuperadminDashboard() {
                 </button>
             </div>
 
-            {/* ── Platform KPI Stats ── */}
+            {/* ── Platform KPI Stats (Compact Cube Design) ── */}
             {t && (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                    gap: 16,
-                    marginBottom: 24
-                }}>
+                <div className="kpi-cube-grid">
                     <StatCard
-                        icon={<Store size={22} color="#33d17a" />}
+                        icon={<Store size={18} color="#33d17a" />}
                         label="Барбершопов"
                         value={t.total_shops}
-                        sub={`${t.active_shops} активных точек`}
+                        sub={`${t.active_shops} актив.`}
                         color="rgba(51,209,122,0.12)"
                     />
                     <StatCard
-                        icon={<Coins size={22} color="#f59e0b" />}
+                        icon={<Coins size={18} color="#f59e0b" />}
                         label="Оплачено за тарифы"
                         value={formatMoney(t.total_tariffs_paid || 0)}
-                        sub="Доход платформы с подписок"
+                        sub="Доход с подписок"
                         color="rgba(245,158,11,0.14)"
                     />
                     <StatCard
-                        icon={<TrendingUp size={22} color="#10b981" />}
-                        label="Заработано барбершопами"
+                        icon={<TrendingUp size={18} color="#10b981" />}
+                        label="Заработано точками"
                         value={formatMoney(t.total_revenue || 0)}
-                        sub={`${t.total_bookings} выполненных записей`}
+                        sub={`${t.total_bookings} записей`}
                         color="rgba(16,185,129,0.14)"
                     />
                     <StatCard
-                        icon={<CheckCircle size={22} color="#4dabf7" />}
+                        icon={<CheckCircle size={18} color="#4dabf7" />}
                         label="Активных подписок"
                         value={t.active_plans}
-                        sub={t.expired_plans ? `${t.expired_plans} истекших` : 'Все активны'}
+                        sub={t.expired_plans ? `${t.expired_plans} истек.` : 'Все активны'}
                         color="rgba(77,171,247,0.12)"
                     />
                 </div>
