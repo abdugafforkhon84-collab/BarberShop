@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, KeyRound, Power, Trash2, X, Copy, Check, MapPin, RefreshCw, User, Phone, Coins, Settings2, Sparkles, Building2, Eye, EyeOff, Navigation, Search, Loader2 } from 'lucide-react';
+import { Plus, KeyRound, Power, Trash2, X, Copy, Check, MapPin, RefreshCw, User, Phone, Coins, Settings2, Sparkles, Building2, Eye, EyeOff, Navigation, Search, Loader2, ChevronDown, Store } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -82,6 +82,16 @@ export default function SuperadminTenants() {
     const [renewCustomPrice, setRenewCustomPrice] = useState('');
     const [form, setForm] = useState(emptyForm);
     const [copiedId, setCopiedId] = useState(null);
+    const [expandedIds, setExpandedIds] = useState(new Set());
+
+    function toggleExpand(id) {
+        setExpandedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    }
     const [confirmConfig, setConfirmConfig] = useState(null);
     const [isLocating, setIsLocating] = useState(false);
     const [isSearchingAddress, setIsSearchingAddress] = useState(false);
@@ -355,96 +365,190 @@ export default function SuperadminTenants() {
             {loading && <p className="empty-state">Загрузка барбершопов...</p>}
             {!loading && tenants.length === 0 && <p className="empty-state">Барбершопов пока нет — добавьте первый</p>}
 
-            {/* Tenant Cards Grid */}
-            <div className="grid grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: 16 }}>
+            {/* Tenant Accordion List (1 Row per shop, click to expand) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {tenants.map((t) => {
                     const planStatus = getPlanStatus(t);
+                    const isExpanded = expandedIds.has(t.id);
+
                     return (
-                        <div className="card" key={t.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 18 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, gap: 8 }}>
-                                <h3 style={{ flex: 1, fontSize: 17, fontWeight: 700, margin: 0 }}>{t.shop_name}</h3>
-                                <span className={`badge ${t.is_active ? 'badge-done' : 'badge-cancelled'}`} style={{ padding: '3px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
-                                    {t.is_active ? 'Активен' : 'Отключён'}
-                                </span>
-                            </div>
-
-                            {t.owner_name && (
-                                <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <User size={13} /> {t.owner_name}
-                                </div>
-                            )}
-                            {t.phone && (
-                                <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <Phone size={13} /> {t.phone}
-                                </div>
-                            )}
-                            {t.address && (
-                                <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 8, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                                    <MapPin size={13} style={{ marginTop: 2, flexShrink: 0 }} />
-                                    <span>{t.address}</span>
-                                </div>
-                            )}
-
-                            <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 4 }}>Логин администратора:</div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                                <code style={{ background: 'var(--bg-panel)', padding: '4px 8px', borderRadius: 6, fontSize: 13, fontWeight: 600 }}>{t.admin_login}</code>
-                                <button className="btn btn-icon" style={{ padding: 4, minHeight: 32, minWidth: 32 }} onClick={() => copyCreds(t)} title="Скопировать логин">
-                                    {copiedId === t.id ? <Check size={14} color="var(--green)" /> : <Copy size={14} />}
-                                </button>
-                            </div>
-
-                            {/* Subscription Plan & Payment Info */}
-                            <div style={{ background: 'var(--bg-panel)', borderRadius: 10, padding: '12px 14px', marginBottom: 14, border: '1px solid var(--border)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                        <Coins size={14} color="var(--green)" />
-                                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>Тариф:</span>
+                        <div 
+                            key={t.id} 
+                            className="card" 
+                            style={{ 
+                                background: 'var(--bg-card)', 
+                                border: `1px solid ${isExpanded ? 'var(--green)' : 'var(--border)'}`, 
+                                borderRadius: 14, 
+                                padding: '12px 16px',
+                                transition: 'all 0.2s ease',
+                                cursor: 'pointer'
+                            }}
+                            onClick={() => toggleExpand(t.id)}
+                        >
+                            {/* ── Single Collapsed Row ── */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+                                    <div style={{
+                                        width: 38, height: 38, borderRadius: 10,
+                                        background: t.is_active ? 'rgba(var(--green-rgb, 74, 222, 128), 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                        color: t.is_active ? 'var(--green)' : 'var(--status-cancelled)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        flexShrink: 0
+                                    }}>
+                                        <Store size={18} />
                                     </div>
-                                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>
-                                        {t.plan_months === 1 ? 'Пробный 1 мес' : t.plan_months ? `${t.plan_months} мес` : 'Без тарифа'}
-                                    </span>
+                                    <div style={{ minWidth: 0, flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                            <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {t.shop_name}
+                                            </h3>
+                                            <span className={`badge ${t.is_active ? 'badge-done' : 'badge-cancelled'}`} style={{ fontSize: 10, padding: '2px 6px', flexShrink: 0 }}>
+                                                {t.is_active ? 'Активен' : 'Отключён'}
+                                            </span>
+                                        </div>
+                                        <div style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
+                                            {t.owner_name ? `${t.owner_name} · ` : ''}{t.plan_months === 1 ? 'Пробный (1 мес)' : `Тариф: ${t.plan_months || 0} мес`}
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                                    <span style={{ color: 'var(--text-muted)' }}>Начало:</span>
-                                    <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
-                                        {t.plan_start ? formatDate(t.plan_start) : '—'}
-                                    </span>
-                                </div>
-
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12 }}>
-                                    <span style={{ color: 'var(--text-muted)' }}>Окончание:</span>
-                                    <span style={{ fontWeight: 600, color: planStatus === 'active' ? 'var(--text-main)' : 'var(--status-cancelled)' }}>
-                                        {t.plan_end ? (planStatus === 'active' ? formatDate(t.plan_end) : `истёк ${formatDate(t.plan_end)}`) : '—'}
-                                    </span>
-                                </div>
-
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                                    <span style={{ color: 'var(--text-muted)' }}>Оплачено:</span>
-                                    <span style={{ fontWeight: 700, color: 'var(--green)' }}>
-                                        {t.subscription_price ? `${t.subscription_price.toLocaleString('ru-RU')} ₸` : '0 ₸ (Пробный)'}
-                                    </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                                    <ChevronDown 
+                                        size={20} 
+                                        style={{ 
+                                            color: isExpanded ? 'var(--green)' : 'var(--text-muted)', 
+                                            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                            transition: 'transform 0.2s ease'
+                                        }} 
+                                    />
                                 </div>
                             </div>
 
-                            <div style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 14 }}>
-                                Добавлен {formatDate(t.created_at?.slice(0, 10))}
-                            </div>
+                            {/* ── Expanded Details View ── */}
+                            {isExpanded && (
+                                <div 
+                                    style={{ 
+                                        marginTop: 14, 
+                                        paddingTop: 14, 
+                                        borderTop: '1px solid var(--border)', 
+                                        display: 'flex', 
+                                        flexDirection: 'column', 
+                                        gap: 12,
+                                        cursor: 'default'
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    {/* Contacts & Address */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: 'var(--text-muted)' }}>
+                                        {t.owner_name && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <User size={13} color="var(--green)" />
+                                                <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{t.owner_name}</span>
+                                            </div>
+                                        )}
+                                        {t.phone && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <Phone size={13} color="var(--green)" />
+                                                <a href={`tel:${t.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                                                    {t.phone}
+                                                </a>
+                                            </div>
+                                        )}
+                                        {t.address && (
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                                                <MapPin size={13} style={{ marginTop: 2, flexShrink: 0 }} color="var(--green)" />
+                                                <span>{t.address}</span>
+                                            </div>
+                                        )}
+                                    </div>
 
-                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                {!t.parent_id && (
-                                    <button className="btn btn-sm btn-outline" style={{ color: 'var(--green)', borderColor: 'var(--green)' }} onClick={() => {
-                                        setForm({...emptyForm, parent_id: t.id});
-                                        setModalOpen(true);
-                                    }}><Plus size={14} /> Филиал</button>
-                                )}
-                                <button className="btn btn-sm btn-outline" onClick={() => resetPassword(t)}><KeyRound size={14} /> Пароль</button>
-                                <button className="btn btn-sm btn-outline" onClick={() => toggleActive(t)}><Power size={14} /> {t.is_active ? 'Отключить' : 'Включить'}</button>
-                                <button className="btn btn-sm btn-warning" onClick={() => { setRenewMonths(3); setRenewModal(t); }}>
-                                    <RefreshCw size={14} /> Продлить
-                                </button>
-                                <button className="btn btn-sm btn-danger" onClick={() => remove(t)}><Trash2 size={14} /></button>
-                            </div>
+                                    {/* Admin Login with Copy */}
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'space-between', 
+                                        background: 'var(--bg-panel)', 
+                                        padding: '8px 12px', 
+                                        borderRadius: 8,
+                                        border: '1px solid var(--border)'
+                                    }}>
+                                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Логин администратора:</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <code style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-main)' }}>{t.admin_login}</code>
+                                            <button 
+                                                className="btn btn-icon" 
+                                                style={{ padding: 4, minHeight: 28, minWidth: 28 }} 
+                                                onClick={() => copyCreds(t)} 
+                                                title="Скопировать логин"
+                                            >
+                                                {copiedId === t.id ? <Check size={14} color="var(--green)" /> : <Copy size={14} />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Subscription Plan & Payment Info */}
+                                    <div style={{ background: 'var(--bg-panel)', borderRadius: 10, padding: '10px 12px', border: '1px solid var(--border)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <Coins size={14} color="var(--green)" />
+                                                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Тариф:</span>
+                                            </div>
+                                            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>
+                                                {t.plan_months === 1 ? 'Пробный 1 мес' : t.plan_months ? `${t.plan_months} мес` : 'Без тарифа'}
+                                            </span>
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                                            <span style={{ color: 'var(--text-muted)' }}>Начало:</span>
+                                            <span style={{ fontWeight: 600 }}>
+                                                {t.plan_start ? formatDate(t.plan_start) : '—'}
+                                            </span>
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                                            <span style={{ color: 'var(--text-muted)' }}>Окончание:</span>
+                                            <span style={{ fontWeight: 600, color: planStatus === 'active' ? 'var(--text-main)' : 'var(--status-cancelled)' }}>
+                                                {t.plan_end ? (planStatus === 'active' ? formatDate(t.plan_end) : `истёк ${formatDate(t.plan_end)}`) : '—'}
+                                            </span>
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <span style={{ color: 'var(--text-muted)' }}>Оплачено:</span>
+                                            <span style={{ fontWeight: 700, color: 'var(--green)' }}>
+                                                {t.subscription_price ? `${t.subscription_price.toLocaleString('ru-RU')} ₸` : '0 ₸ (Пробный)'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ color: 'var(--text-dim)', fontSize: 11 }}>
+                                        Добавлен {formatDate(t.created_at?.slice(0, 10))}
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                        {!t.parent_id && (
+                                            <button className="btn btn-sm btn-outline" style={{ color: 'var(--green)', borderColor: 'var(--green)', minHeight: 36 }} onClick={() => {
+                                                setForm({...emptyForm, parent_id: t.id});
+                                                setModalOpen(true);
+                                            }}>
+                                                <Plus size={14} /> Филиал
+                                            </button>
+                                        )}
+                                        <button className="btn btn-sm btn-outline" style={{ minHeight: 36 }} onClick={() => resetPassword(t)}>
+                                            <KeyRound size={14} /> Пароль
+                                        </button>
+                                        <button className="btn btn-sm btn-outline" style={{ minHeight: 36 }} onClick={() => toggleActive(t)}>
+                                            <Power size={14} /> {t.is_active ? 'Отключить' : 'Включить'}
+                                        </button>
+                                        <button className="btn btn-sm btn-warning" style={{ minHeight: 36 }} onClick={() => { setRenewMonths(3); setRenewModal(t); }}>
+                                            <RefreshCw size={14} /> Продлить
+                                        </button>
+                                        <button className="btn btn-sm btn-danger" style={{ minHeight: 36, padding: '0 12px' }} onClick={() => remove(t)}>
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     );
                 })}
