@@ -22,16 +22,18 @@ reports. Those live in a database this router never opens.
                                          AND its entire database
 ------------------------------------------------------------
 """
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 import json
+import os
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
+from ..config import DATA_DIR
 from ..deps import require_superadmin
-from ..master_database import get_master_db
+from ..master_database import MasterSessionLocal, get_master_db
 from ..master_models import LoginIndex, Tenant, PlatformTariffSettings
 from ..security import hash_password
 from ..tenant_db import drop_tenant_database, is_valid_slug, open_tenant_session, provision_tenant, slugify
@@ -219,6 +221,7 @@ def create_tenant(payload: schemas.TenantCreate, db: Session = Depends(get_maste
 
     # Creates the shop's own, completely separate database file.
     provision_tenant(slug)
+    save_snapshot(db)
 
     return tenant
 
@@ -246,6 +249,7 @@ def update_tenant(tenant_id: int, payload: schemas.TenantUpdate, db: Session = D
 
     db.commit()
     db.refresh(tenant)
+    save_snapshot(db)
     return tenant
 
 
@@ -275,6 +279,7 @@ def renew_tenant(tenant_id: int, payload: schemas.TenantRenew, db: Session = Dep
 
     db.commit()
     db.refresh(tenant)
+    save_snapshot(db)
     return tenant
 
 
@@ -291,6 +296,7 @@ def delete_tenant(tenant_id: int, db: Session = Depends(get_master_db)):
 
     # Physically deletes the shop's database file - irreversible.
     drop_tenant_database(slug)
+    save_snapshot(db)
 
     return {"success": True}
 
@@ -383,3 +389,286 @@ def platform_overview(db: Session = Depends(get_master_db)):
     }
 
     return {"shops": shops, "totals": totals}
+
+
+# ============================================================ Backup & Restore
+def export_platform_backup(db: Session) -> dict:
+    tenants = db.query(Tenant).all()
+    tariff_settings = db.query(PlatformTariffSettings).first()
+
+    backup_data = {
+        "version": "2.0",
+        "exported_at": datetime.utcnow().isoformat(),
+        "tariff_settings": {
+            "price_1_month": tariff_settings.price_1_month if tariff_settings else 0.0,
+            "price_3_months": tariff_settings.price_3_months if tariff_settings else 15000.0,
+            "price_6_months": tariff_settings.price_6_months if tariff_settings else 27000.0,
+            "price_12_months": tariff_settings.price_12_months if tariff_settings else 48000.0,
+            "tariffs_json": tariff_settings.tariffs_json if tariff_settings else "[]",
+        },
+        "tenants": []
+    }
+
+    for t in tenants:
+        t_dict = {
+            "slug": t.slug,
+            "shop_name": t.shop_name,
+            "admin_login": t.admin_login,
+            "admin_password_hash": t.admin_password_hash,
+            "owner_name": t.owner_name,
+            "phone": t.phone,
+            "address": t.address,
+            "lat": t.lat,
+            "lng": t.lng,
+            "plan_months": t.plan_months,
+            "plan_start": t.plan_start.isoformat() if t.plan_start else None,
+            "plan_end": t.plan_end.isoformat() if t.plan_end else None,
+            "subscription_price": t.subscription_price or 0.0,
+            "is_trial": bool(t.is_trial),
+            "is_active": bool(t.is_active),
+            "parent_id": t.parent_id,
+            "created_at": t.created_at.isoformat() if t.created_at else None,
+        }
+
+        tenant_item = {
+            "tenant": t_dict,
+            "settings": {},
+            "users": [],
+            "services": [],
+            "clients": []
+        }
+
+        try:
+            tdb = open_tenant_session(t.slug)
+            s = tdb.query(models.Settings).first()
+            if s:
+                tenant_item["settings"] = {
+                    "shop_name": s.shop_name,
+                    "work_start": s.work_start,
+                    "work_end": s.work_end,
+                    "slot_minutes": s.slot_minutes,
+                    "currency": s.currency,
+                    "phone": s.phone,
+                    "address": s.address,
+                    "kaspi_phone": s.kaspi_phone or "",
+                    "theme": s.theme or "dark",
+                    "shop_type": s.shop_type or "barbershop",
+                    "price_hair_wash": s.price_hair_wash or 500.0,
+                    "price_beard": s.price_beard or 1000.0,
+                    "price_mask": s.price_mask or 800.0,
+                    "extra_services_json": s.extra_services_json or "[]",
+                }
+
+            users = tdb.query(models.User).all()
+            for u in users:
+                tenant_item["users"].append({
+                    "login": u.login,
+                    "password_hash": u.password_hash,
+                    "full_name": u.full_name,
+                    "phone": u.phone,
+                    "role": u.role.value if hasattr(u.role, "value") else str(u.role),
+                    "is_active": bool(u.is_active),
+                    "salary_type": u.salary_type or "percent",
+                    "salary_amount": u.salary_amount or 50.0,
+                    "barber_percent": u.barber_percent or 50.0,
+                })
+
+            services = tdb.query(models.Service).all()
+            for s in services:
+                tenant_item["services"].append({
+                    "name": s.name,
+                    "price": s.price,
+                    "duration": s.duration,
+                })
+
+            clients = tdb.query(models.Client).all()
+            for c in clients:
+                tenant_item["clients"].append({
+                    "name": c.name,
+                    "phone": c.phone,
+                })
+
+            tdb.close()
+        except Exception as err:
+            print(f"Error exporting tenant {t.slug}: {err}")
+
+        backup_data["tenants"].append(tenant_item)
+
+    return backup_data
+
+
+def import_platform_backup(data: dict, db: Session) -> dict:
+    tenants_list = data.get("tenants", [])
+    restored_count = 0
+
+    tariff_data = data.get("tariff_settings")
+    if tariff_data:
+        ts = _get_or_create_tariff_settings(db)
+        if "price_1_month" in tariff_data: ts.price_1_month = tariff_data["price_1_month"]
+        if "price_3_months" in tariff_data: ts.price_3_months = tariff_data["price_3_months"]
+        if "price_6_months" in tariff_data: ts.price_6_months = tariff_data["price_6_months"]
+        if "price_12_months" in tariff_data: ts.price_12_months = tariff_data["price_12_months"]
+        if "tariffs_json" in tariff_data: ts.tariffs_json = tariff_data["tariffs_json"]
+        db.commit()
+
+    for item in tenants_list:
+        t_data = item.get("tenant", {})
+        slug = t_data.get("slug")
+        if not slug:
+            continue
+
+        existing_tenant = db.query(Tenant).filter(Tenant.slug == slug).first()
+        if not existing_tenant:
+            plan_start = date.fromisoformat(t_data["plan_start"]) if t_data.get("plan_start") else None
+            plan_end = date.fromisoformat(t_data["plan_end"]) if t_data.get("plan_end") else None
+
+            existing_tenant = Tenant(
+                slug=slug,
+                shop_name=t_data.get("shop_name", "Shop"),
+                admin_login=t_data.get("admin_login", slug),
+                admin_password_hash=t_data.get("admin_password_hash", ""),
+                owner_name=t_data.get("owner_name"),
+                phone=t_data.get("phone"),
+                address=t_data.get("address"),
+                lat=t_data.get("lat"),
+                lng=t_data.get("lng"),
+                plan_months=t_data.get("plan_months", 1),
+                plan_start=plan_start,
+                plan_end=plan_end,
+                subscription_price=t_data.get("subscription_price", 0.0),
+                is_trial=bool(t_data.get("is_trial", False)),
+                is_active=bool(t_data.get("is_active", True)),
+                parent_id=t_data.get("parent_id"),
+            )
+            db.add(existing_tenant)
+
+            if not db.query(LoginIndex).filter(LoginIndex.login == existing_tenant.admin_login).first():
+                db.add(LoginIndex(login=existing_tenant.admin_login, tenant_slug=slug, role="admin"))
+            db.commit()
+            db.refresh(existing_tenant)
+
+        # Provision tenant database
+        provision_tenant(slug)
+        tdb = open_tenant_session(slug)
+        try:
+            # Settings
+            s_data = item.get("settings", {})
+            if s_data:
+                settings_row = tdb.query(models.Settings).first()
+                if not settings_row:
+                    settings_row = models.Settings()
+                    tdb.add(settings_row)
+                for k, v in s_data.items():
+                    if hasattr(settings_row, k) and v is not None:
+                        setattr(settings_row, k, v)
+                tdb.commit()
+
+            # Services
+            for s in item.get("services", []):
+                s_name = s.get("name")
+                if s_name and not tdb.query(models.Service).filter(models.Service.name == s_name).first():
+                    tdb.add(models.Service(
+                        name=s_name,
+                        price=s.get("price", 0.0),
+                        duration=s.get("duration", 30)
+                    ))
+            tdb.commit()
+
+            # Barbers / Users
+            for u in item.get("users", []):
+                u_login = u.get("login")
+                if u_login and not tdb.query(models.User).filter(models.User.login == u_login).first():
+                    tdb.add(models.User(
+                        login=u_login,
+                        password_hash=u.get("password_hash", ""),
+                        full_name=u.get("full_name", u_login),
+                        phone=u.get("phone"),
+                        role=models.RoleEnum.barber,
+                        is_active=bool(u.get("is_active", True)),
+                        salary_type=u.get("salary_type", "percent"),
+                        salary_amount=u.get("salary_amount", 50.0),
+                        barber_percent=u.get("barber_percent", 50.0),
+                    ))
+                    if not db.query(LoginIndex).filter(LoginIndex.login == u_login).first():
+                        db.add(LoginIndex(login=u_login, tenant_slug=slug, role="barber"))
+                        db.commit()
+            tdb.commit()
+
+            # Clients
+            for c in item.get("clients", []):
+                c_phone = c.get("phone")
+                if c_phone and not tdb.query(models.Client).filter(models.Client.phone == c_phone).first():
+                    tdb.add(models.Client(
+                        name=c.get("name", "Клиент"),
+                        phone=c_phone
+                    ))
+            tdb.commit()
+            restored_count += 1
+        finally:
+            tdb.close()
+
+    return {"success": True, "restored_shops": restored_count}
+
+
+def save_snapshot(db: Optional[Session] = None) -> None:
+    should_close = False
+    if db is None:
+        db = MasterSessionLocal()
+        should_close = True
+    try:
+        backup = export_platform_backup(db)
+        snapshot_paths = [
+            os.path.join(DATA_DIR, "backup_snapshot.json"),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "backup_snapshot.json")),
+        ]
+        for p in snapshot_paths:
+            try:
+                os.makedirs(os.path.dirname(p), exist_ok=True)
+                with open(p, "w", encoding="utf-8") as f:
+                    json.dump(backup, f, ensure_ascii=False, indent=2)
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"Snapshot save error: {e}")
+    finally:
+        if should_close:
+            db.close()
+
+
+def auto_restore_snapshot_if_empty() -> None:
+    db = MasterSessionLocal()
+    try:
+        tenant_count = db.query(Tenant).count()
+        if tenant_count == 0:
+            snapshot_paths = [
+                os.path.join(DATA_DIR, "backup_snapshot.json"),
+                os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "backup_snapshot.json")),
+            ]
+            for p in snapshot_paths:
+                if os.path.isfile(p):
+                    try:
+                        with open(p, "r", encoding="utf-8") as f:
+                            data = json.load(f)
+                        if data and data.get("tenants"):
+                            print(f"Auto-restoring {len(data['tenants'])} barbershop(s) from {p}...")
+                            import_platform_backup(data, db)
+                            print("Auto-restore completed successfully!")
+                            break
+                    except Exception as e:
+                        print(f"Failed auto-restoring snapshot from {p}: {e}")
+    finally:
+        db.close()
+
+
+@router.get("/backup/export")
+def download_backup(db: Session = Depends(get_master_db)):
+    """Exports all platform tenants and operational settings as a JSON backup."""
+    return export_platform_backup(db)
+
+
+@router.post("/backup/import")
+def upload_backup(payload: dict, db: Session = Depends(get_master_db)):
+    """Restores platform tenants and data from a JSON backup."""
+    res = import_platform_backup(payload, db)
+    save_snapshot(db)
+    return res

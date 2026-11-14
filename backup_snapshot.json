@@ -1,0 +1,150 @@
+{
+  "version": "2.0",
+  "exported_at": "2026-11-14T06:42:17.119Z",
+  "tariff_settings": {
+    "price_1_month": 0,
+    "price_3_months": 15000,
+    "price_6_months": 27000,
+    "price_12_months": 48000,
+    "tariffs_json": "[{\"months\": 1, \"price\": 0.0, \"name\": \"1 месяц (Пробный)\"}, {\"months\": 3, \"price\": 15000.0, \"name\": \"3 месяца\"}, {\"months\": 6, \"price\": 27000.0, \"name\": \"6 месяцев\"}, {\"months\": 12, \"price\": 48000.0, \"name\": \"12 месяцев (1 год)\"}]"
+  },
+  "tenants": [
+    {
+      "tenant": {
+        "id": 3,
+        "slug": "barber",
+        "shop_name": "Barbershop",
+        "admin_login": "barber1",
+        "admin_password_hash": "$2b$12$/VukjGQ0xcZzq31RjIXxseyM5M89XfJnIU/497b3y/EynFBtpEzoG",
+        "is_active": 1,
+        "created_at": "2026-09-10 14:31:19.463421",
+        "owner_name": "ALI",
+        "phone": "87674564563",
+        "address": "dasffsasasfasfaf",
+        "lat": 42.31218411428417,
+        "lng": 69.59066942283675,
+        "plan_months": 15,
+        "plan_start": "2026-09-10",
+        "plan_end": "2027-12-10",
+        "subscription_price": 102000,
+        "is_trial": 0,
+        "parent_id": null
+      },
+      "settings": {
+        "id": 1,
+        "shop_name": "Barbershop",
+        "work_start": "08:00",
+        "work_end": "22:00",
+        "slot_minutes": 30,
+        "currency": "₸",
+        "phone": "87674564563",
+        "address": "dasffsasasfasfaf",
+        "price_hair_wash": 500,
+        "price_beard": 1000,
+        "price_mask": 500,
+        "theme": "dark",
+        "shop_type": "barbershop",
+        "extra_services_json": "[]",
+        "kaspi_phone": ""
+      },
+      "users": [
+        {
+          "id": 1,
+          "login": "asad",
+          "password_hash": "$2b$12$TJLRCQaD.XiPvrUkcpFyYepwCDRhOcivMefvfjHGlRLBASQJT7QfS",
+          "full_name": "asad",
+          "phone": "6786",
+          "role": "barber",
+          "is_active": 1,
+          "barber_percent": 50,
+          "created_at": "2026-09-10 14:34:41.930877",
+          "salary_type": "percent",
+          "salary_amount": 50
+        },
+        {
+          "id": 2,
+          "login": "farhod",
+          "password_hash": "$2b$12$mSAblrtn9vrrWqohSLL.UeitKq/AJLYXLahUodiblHzyaoyQkiaC2",
+          "full_name": "Farhod",
+          "phone": "876535664",
+          "role": "barber",
+          "is_active": 1,
+          "barber_percent": 20,
+          "created_at": "2026-09-10 14:39:34.740744",
+          "salary_type": "percent",
+          "salary_amount": 50
+        }
+      ],
+      "services": [
+        {
+          "id": 1,
+          "name": "Прическа",
+          "price": 1000,
+          "duration": 10
+        },
+        {
+          "id": 2,
+          "name": "Школьный прическа",
+          "price": 700,
+          "duration": 10
+        },
+        {
+          "id": 3,
+          "name": "Лысый",
+          "price": 500,
+          "duration": 5
+        }
+      ],
+      "clients": [
+        {
+          "id": 1,
+          "name": "Davron",
+          "phone": "87673524352",
+          "created_at": "2026-09-10 14:38:37.528976"
+        },
+        {
+          "id": 2,
+          "name": "Bobir",
+          "phone": "8757838234",
+          "created_at": "2026-09-10 14:40:10.555163"
+        },
+        {
+          "id": 3,
+          "name": "Асатбек",
+          "phone": "87473453453",
+          "created_at": "2026-09-12 13:32:53.934218"
+        },
+        {
+          "id": 4,
+          "name": "Ыфва",
+          "phone": "5463563563",
+          "created_at": "2026-09-12 14:34:02.523814"
+        },
+        {
+          "id": 5,
+          "name": "Фарход",
+          "phone": "+77473546723",
+          "created_at": "2026-09-17 14:05:32.562115"
+        },
+        {
+          "id": 6,
+          "name": "Jasur",
+          "phone": "87473456876",
+          "created_at": "2026-09-19 04:28:32.249911"
+        },
+        {
+          "id": 7,
+          "name": "асил",
+          "phone": "5467890",
+          "created_at": "2026-09-19 05:22:19.002946"
+        },
+        {
+          "id": 8,
+          "name": "Test No Phone",
+          "phone": "no-phone-5ed2f019",
+          "created_at": "2026-10-29 14:15:36.819389"
+        }
+      ]
+    }
+  ]
+}

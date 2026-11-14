@@ -7,6 +7,11 @@ services:
     buildCommand: "cd backend && pip install -r requirements.txt"
     startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     healthCheckPath: /api/health
+    # To persist SQLite directly on Render (requires Starter plan):
+    # disk:
+    #   name: barberpro-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
     envVars:
       - key: SUPERADMIN_LOGIN
         value: superadmin
@@ -16,6 +21,12 @@ services:
         generateValue: true
       - key: CORS_ORIGINS
         value: "*"
+      # Persistent data directory (auto-detects /var/data if mounted)
+      - key: DATA_DIR
+        value: /var/data
+      # Or connect a free persistent PostgreSQL (Neon, Supabase, etc.):
+      # - key: MASTER_DATABASE_URL
+      #   sync: false
         
   - type: web
     name: barberpro-frontend

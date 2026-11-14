@@ -363,7 +363,21 @@ export default function SuperadminTenants() {
             </div>
 
             {loading && <p className="empty-state">Загрузка барбершопов...</p>}
-            {!loading && tenants.length === 0 && <p className="empty-state">Барбершопов пока нет — добавьте первый</p>}
+            {!loading && tenants.length === 0 && (
+                <div className="card" style={{ padding: '30px 20px', textAlign: 'center', borderRadius: 14, margin: '20px 0' }}>
+                    <p style={{ margin: '0 0 16px 0', fontSize: 15, color: 'var(--text-muted)' }}>
+                        Барбершопов пока нет — добавьте первый или восстановите из копии
+                    </p>
+                    <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <button className="btn btn-primary" onClick={openCreate} style={{ height: 40, padding: '0 18px' }}>
+                            <Plus size={16} /> Добавить барбершоп
+                        </button>
+                        <button className="btn btn-outline" onClick={() => navigate('/superadmin/settings')} style={{ height: 40, padding: '0 18px' }}>
+                            Восстановить из копии в Настройках
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Tenant Accordion List (1 Row per shop, click to expand) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

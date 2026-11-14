@@ -7,18 +7,22 @@
  * - Выход из системы
  * ------------------------------------------------------------
  */
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { KeyRound, Shield, Palette, LogOut, CheckCircle2, AlertCircle } from 'lucide-react';
+import { KeyRound, Shield, Palette, LogOut, CheckCircle2, AlertCircle, Database, Download, Upload, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import PinScreen from '../../components/PinScreen';
+import { superadminApi } from '../../api';
 
 export default function SuperadminSettings() {
     const { logout, hasPin, removePin, fullName } = useAuth();
     const navigate = useNavigate();
     const showToast = useToast();
     const [pinModalMode, setPinModalMode] = useState(null);
+    const [isExporting, setIsExporting] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
+    const fileInputRef = useRef(null);
 
     function handleLogout() {
         logout();
@@ -29,6 +33,45 @@ export default function SuperadminSettings() {
         if (window.confirm('Отключить быстрый вход по ПИН-коду? При следующем входе потребуется логин и пароль.')) {
             removePin();
             showToast('ПИН-код отключён');
+        }
+    }
+
+    async function handleExportBackup() {
+        setIsExporting(true);
+        try {
+            const data = await superadminApi.exportBackup();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const dateStr = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `barberpro_backup_${dateStr}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Резервная копия успешно скачана ✓');
+        } catch (e) {
+            showToast('Ошибка при скачивании резервной копии', true);
+        } finally {
+            setIsExporting(false);
+        }
+    }
+
+    async function handleFileSelected(e) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setIsImporting(true);
+        try {
+            const text = await file.text();
+            const json = JSON.parse(text);
+            const res = await superadminApi.importBackup(json);
+            showToast(`Успешно восстановлено барбершопов: ${res.restored_shops || 0} ✓`);
+        } catch (err) {
+            showToast('Ошибка восстановления: неверный формат файла', true);
+        } finally {
+            setIsImporting(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     }
 
@@ -113,6 +156,61 @@ export default function SuperadminSettings() {
                             Установить 4-значный ПИН-код
                         </button>
                     )}
+                </div>
+
+                {/* ── Backup & Data Protection Card ── */}
+                <div className="card" style={{ padding: '18px 20px', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{
+                                width: 40, height: 40, borderRadius: 12,
+                                background: 'rgba(59, 130, 246, 0.12)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: '#3b82f6'
+                            }}>
+                                <Database size={20} />
+                            </div>
+                            <div>
+                                <div style={{ fontWeight: 700, fontSize: 15 }}>Защита данных и бэкап</div>
+                                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Сохранение и восстановление всех барбершопов</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.45, margin: '0 0 16px 0' }}>
+                        Скачивайте резервную копию всех точек и настроек на устройство. Если сервер перезагрузится или обновится, вы сможете восстановить все барбершопы за одну секунду.
+                    </p>
+
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={handleExportBackup}
+                            disabled={isExporting}
+                            style={{ flex: 1, minWidth: 160, minHeight: 44, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                        >
+                            {isExporting ? <Loader2 size={16} className="spin" /> : <Download size={16} />}
+                            {isExporting ? 'Сохранение...' : 'Скачать бэкап (JSON)'}
+                        </button>
+
+                        <button
+                            type="button"
+                            className="btn btn-outline"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isImporting}
+                            style={{ flex: 1, minWidth: 160, minHeight: 44, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                        >
+                            {isImporting ? <Loader2 size={16} className="spin" /> : <Upload size={16} />}
+                            {isImporting ? 'Восстановление...' : 'Восстановить из файла'}
+                        </button>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileSelected}
+                            accept=".json,application/json"
+                            style={{ display: 'none' }}
+                        />
+                    </div>
                 </div>
 
                 {/* ── Theme Switch Card ── */}

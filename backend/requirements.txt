@@ -7,7 +7,5 @@ passlib[bcrypt]>=1.7.4
 bcrypt<4.1
 python-multipart>=0.0.9
 python-dotenv>=1.0.1
+psycopg2-binary>=2.9.9
 
-# Optional (only needed if you switch DATABASE_URL to MySQL / PostgreSQL):
-# PyMySQL>=1.1.1
-# psycopg2-binary>=2.9.9

@@ -113,5 +113,10 @@ def on_startup():
     from .migrate_master import migrate_master_db
     migrate_master_db()
     seed_platform_admin()
+    try:
+        from .routers.superadmin import auto_restore_snapshot_if_empty
+        auto_restore_snapshot_if_empty()
+    except Exception as e:
+        print(f"Auto-restore check note: {e}")
 
 

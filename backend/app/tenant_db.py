@@ -25,7 +25,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from . import models  # tenant schema (Base.metadata target)
-from .config import TENANT_DATABASE_URL_TEMPLATE, TENANTS_DIR
+from .config import MASTER_DATABASE_URL, TENANT_DATABASE_URL_TEMPLATE, TENANTS_DIR
 from .database import Base as TenantBase
 
 _engines: dict[str, "object"] = {}
@@ -55,10 +55,22 @@ def slugify(shop_name: str) -> str:
     return s[:60]
 
 
+def _clean_schema_name(slug: str) -> str:
+    clean = re.sub(r"[^a-zA-Z0-9_]", "_", slug).lower()
+    return f"tenant_{clean}"
+
+
 def _tenant_db_url(slug: str) -> str:
     if TENANT_DATABASE_URL_TEMPLATE:
         return TENANT_DATABASE_URL_TEMPLATE.format(slug=slug)
-    path = os.path.join(TENANTS_DIR, f"{slug}.db")
+
+    # If master DB is PostgreSQL and no tenant template is given, use the same DB with schemas
+    if MASTER_DATABASE_URL.startswith("postgresql"):
+        schema_name = _clean_schema_name(slug)
+        sep = "&" if "?" in MASTER_DATABASE_URL else "?"
+        return f"{MASTER_DATABASE_URL}{sep}options=-csearch_path%3D{schema_name},public"
+
+    path = os.path.join(TENANTS_DIR, f"{slug}.db").replace("\\", "/")
     return f"sqlite:///{path}"
 
 
@@ -68,37 +80,48 @@ def get_tenant_engine(slug: str):
     with _lock:
         if slug not in _engines:
             url = _tenant_db_url(slug)
-            connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
+            is_sqlite = url.startswith("sqlite")
+            is_postgres = url.startswith("postgresql")
+
+            connect_args = {}
+            if is_sqlite:
+                connect_args["check_same_thread"] = False
+
             engine = create_engine(url, connect_args=connect_args)
+
+            if is_postgres:
+                schema_name = _clean_schema_name(slug)
+                with engine.begin() as conn:
+                    conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"'))
+
             TenantBase.metadata.create_all(bind=engine)
             
-            # Auto-migrate new columns for existing SQLite databases
-            if url.startswith("sqlite"):
-                with engine.begin() as conn:
-                    try:
-                        conn.execute(text("ALTER TABLE users ADD COLUMN salary_type VARCHAR(20) DEFAULT 'percent'"))
-                    except Exception:
-                        pass
-                    try:
-                        conn.execute(text("ALTER TABLE settings ADD COLUMN kaspi_phone VARCHAR(30) DEFAULT ''"))
-                    except Exception:
-                        pass
-                    try:
-                        conn.execute(text("ALTER TABLE users ADD COLUMN salary_amount FLOAT DEFAULT 50.0"))
-                    except Exception:
-                        pass
-                    try:
-                        conn.execute(text("ALTER TABLE settings ADD COLUMN theme VARCHAR(20) DEFAULT 'dark'"))
-                    except Exception:
-                        pass
-                    try:
-                        conn.execute(text("ALTER TABLE settings ADD COLUMN shop_type VARCHAR(20) DEFAULT 'barbershop'"))
-                    except Exception:
-                        pass
-                    try:
-                        conn.execute(text("ALTER TABLE settings ADD COLUMN extra_services_json TEXT DEFAULT '[]'"))
-                    except Exception:
-                        pass
+            # Auto-migrate new columns for existing databases
+            with engine.begin() as conn:
+                try:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN salary_type VARCHAR(20) DEFAULT 'percent'"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE settings ADD COLUMN kaspi_phone VARCHAR(30) DEFAULT ''"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN salary_amount FLOAT DEFAULT 50.0"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE settings ADD COLUMN theme VARCHAR(20) DEFAULT 'dark'"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE settings ADD COLUMN shop_type VARCHAR(20) DEFAULT 'barbershop'"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE settings ADD COLUMN extra_services_json TEXT DEFAULT '[]'"))
+                except Exception:
+                    pass
 
             _engines[slug] = engine
     return _engines[slug]
@@ -134,3 +157,11 @@ def drop_tenant_database(slug: str) -> None:
         path = url.replace("sqlite:///", "", 1)
         if os.path.exists(path):
             os.remove(path)
+    elif url.startswith("postgresql"):
+        schema_name = _clean_schema_name(slug)
+        from .master_database import master_engine
+        try:
+            with master_engine.begin() as conn:
+                conn.execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
+        except Exception:
+            pass

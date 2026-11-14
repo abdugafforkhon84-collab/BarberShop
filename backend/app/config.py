@@ -26,11 +26,38 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# ---- Persistent data directory (for SQLite master.db and tenants_data) ----
+# Supports Render Persistent Disk (/var/data), custom DATA_DIR, or local backend folder
+DATA_DIR = os.getenv("DATA_DIR") or os.getenv("RENDER_DATA_DIR")
+if DATA_DIR:
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+    except Exception:
+        DATA_DIR = None
+
+if not DATA_DIR:
+    if os.path.isdir("/var/data"):
+        DATA_DIR = "/var/data"
+    else:
+        DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+try:
+    os.makedirs(DATA_DIR, exist_ok=True)
+except Exception:
+    pass
+
 # ---- Platform (master) database - superadmin's own data only ----
-MASTER_DATABASE_URL = os.getenv("MASTER_DATABASE_URL", "sqlite:///./master.db")
+raw_master_db = os.getenv("MASTER_DATABASE_URL", "").strip()
+if not raw_master_db:
+    default_master_path = os.path.join(DATA_DIR, "master.db").replace("\\", "/")
+    MASTER_DATABASE_URL = f"sqlite:///{default_master_path}"
+else:
+    if raw_master_db.startswith("postgres://"):
+        raw_master_db = raw_master_db.replace("postgres://", "postgresql://", 1)
+    MASTER_DATABASE_URL = raw_master_db
 
 # ---- Per-tenant databases: one physical SQLite file per barbershop ----
-TENANTS_DIR = os.getenv("TENANTS_DIR", os.path.join(os.path.dirname(__file__), "..", "tenants_data"))
+TENANTS_DIR = os.getenv("TENANTS_DIR", os.path.join(DATA_DIR, "tenants_data"))
 os.makedirs(TENANTS_DIR, exist_ok=True)
 
 # For non-SQLite tenant storage (MySQL/PostgreSQL), set a URL *template*

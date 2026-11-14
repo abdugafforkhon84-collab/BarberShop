@@ -129,4 +129,6 @@ export const superadminApi = {
     overview: () => client.get('/superadmin/overview').then((r) => r.data),
     getTariffSettings: () => client.get('/superadmin/tariff-settings').then((r) => r.data),
     updateTariffSettings: (data) => client.put('/superadmin/tariff-settings', data).then((r) => r.data),
+    exportBackup: () => client.get('/superadmin/backup/export').then((r) => r.data),
+    importBackup: (data) => client.post('/superadmin/backup/import', data).then((r) => r.data),
 };
