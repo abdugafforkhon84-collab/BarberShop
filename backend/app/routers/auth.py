@@ -16,16 +16,17 @@ for admin/barber, the shop's `tenant` slug - every other route
 in the app trusts that claim to pick the right database.
 ------------------------------------------------------------
 """
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..deps import get_token_payload
 from ..master_database import get_master_db
 from ..master_models import LoginIndex, PlatformAdmin, Tenant
-from ..security import create_access_token, verify_password
+from ..security import create_access_token, verify_password, hash_password
 from ..tenant_db import open_tenant_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -173,3 +174,65 @@ def me(payload: dict = Depends(get_token_payload), master_db: Session = Depends(
             tenant_db.close()
 
     raise HTTPException(status_code=401, detail="Некорректный токен")
+
+
+class ChangePasswordPayload(BaseModel):
+    new_password: str = Field(min_length=4, max_length=100)
+    old_password: Optional[str] = None
+
+
+@router.put("/change-password")
+def change_password(
+    payload: ChangePasswordPayload,
+    token_payload: dict = Depends(get_token_payload),
+    master_db: Session = Depends(get_master_db),
+):
+    role = token_payload.get("role")
+    sub = token_payload.get("sub")
+    tenant_slug = token_payload.get("tenant")
+
+    if role == "superadmin":
+        admin = master_db.query(PlatformAdmin).filter(PlatformAdmin.id == int(sub or 0)).first()
+        if not admin:
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+        if payload.old_password and not verify_password(payload.old_password, admin.password_hash):
+            raise HTTPException(status_code=400, detail="Текущий пароль неверен")
+        admin.password_hash = hash_password(payload.new_password)
+        master_db.commit()
+        return {"success": True, "detail": "Пароль успешно обновлён ✓"}
+
+    elif role == "admin":
+        tenant = master_db.query(Tenant).filter(Tenant.slug == tenant_slug).first()
+        if not tenant:
+            raise HTTPException(status_code=404, detail="Барбершоп не найден")
+        if payload.old_password and not verify_password(payload.old_password, tenant.admin_password_hash):
+            raise HTTPException(status_code=400, detail="Текущий пароль неверен")
+        tenant.admin_password_hash = hash_password(payload.new_password)
+        master_db.commit()
+        try:
+            from .superadmin import save_snapshot
+            save_snapshot(master_db)
+        except Exception:
+            pass
+        return {"success": True, "detail": "Пароль администратора успешно обновлён ✓"}
+
+    elif role == "barber":
+        tdb = open_tenant_session(tenant_slug)
+        try:
+            user = tdb.query(models.User).filter(models.User.id == int(sub or 0)).first()
+            if not user:
+                raise HTTPException(status_code=404, detail="Пользователь не найден")
+            if payload.old_password and not verify_password(payload.old_password, user.password_hash):
+                raise HTTPException(status_code=400, detail="Текущий пароль неверен")
+            user.password_hash = hash_password(payload.new_password)
+            tdb.commit()
+            try:
+                from .superadmin import save_snapshot
+                save_snapshot(master_db)
+            except Exception:
+                pass
+            return {"success": True, "detail": "Пароль барбера успешно обновлён ✓"}
+        finally:
+            tdb.close()
+
+    raise HTTPException(status_code=400, detail="Неизвестная роль пользователя")

@@ -296,7 +296,8 @@ export default function SuperadminTenants() {
         }
         try {
             await superadminApi.update(passwordTenant.id, { admin_password: newAdminPassword });
-            showToast('Пароль администратора обновлён ✓');
+            navigator.clipboard?.writeText(newAdminPassword);
+            showToast('Пароль обновлён и скопирован в буфер обмена ✓');
             setPasswordTenant(null);
         } catch (err) {
             showToast(err.response?.data?.detail || 'Ошибка обновления пароля', true);

@@ -28,8 +28,8 @@ export function getPinStorageKey(role, tenant, fullName, token) {
     }
 
     if (currentRole === 'admin') {
-        const slug = (currentTenant || 'admin').toLowerCase().trim().replace(/[^a-z0-9_-]/g, '_');
-        return `barberpro_pin_admin_${slug}`;
+        const clean = (currentTenant || 'admin').toLowerCase().trim().replace(/[\s\W]+/g, '_').replace(/^_|_$/g, '');
+        return `barberpro_pin_admin_${clean || 'shop'}`;
     }
 
     if (currentRole === 'barber') {
@@ -40,9 +40,8 @@ export function getPinStorageKey(role, tenant, fullName, token) {
                 if (payload && payload.sub) barberId = String(payload.sub);
             } catch (_) { }
         }
-        const slug = (currentTenant || 'shop').toLowerCase().trim().replace(/[^a-z0-9_-]/g, '_');
-        const user = (barberId || currentName || 'barber').toLowerCase().trim().replace(/[^a-z0-9_-]/g, '_');
-        return `barberpro_pin_barber_${slug}_${user}`;
+        const cleanUser = (barberId || currentName || 'barber').toLowerCase().trim().replace(/[\s\W]+/g, '_').replace(/^_|_$/g, '');
+        return `barberpro_pin_barber_${cleanUser || 'user'}`;
     }
 
     return 'barberpro_pin';
@@ -141,10 +140,11 @@ export function AuthProvider({ children }) {
         // Check if 4-digit PIN is already configured for THIS specific role & user
         const userPinKey = getPinStorageKey(data.role, userTenant || data.shop_name, data.full_name, data.access_token);
         const existingPin = readScopedPin(userPinKey);
+        const dismissed = localStorage.getItem('barberpro_pin_dismissed') === 'true';
 
         if (!existingPin) {
             setHasPin(false);
-            setNeedsPinSetup(true);
+            setNeedsPinSetup(!dismissed);
             setIsLocked(false);
         } else {
             sessionStorage.setItem(`${userPinKey}_unlocked`, 'true');
@@ -176,6 +176,7 @@ export function AuthProvider({ children }) {
     const setPin = useCallback((newPin) => {
         const key = getCurrentPinKey();
         localStorage.setItem(key, newPin);
+        localStorage.removeItem('barberpro_pin_dismissed');
         sessionStorage.setItem(`${key}_unlocked`, 'true');
         setHasPin(true);
         setIsLocked(false);
@@ -194,7 +195,14 @@ export function AuthProvider({ children }) {
     const skipPinSetup = useCallback(() => {
         const key = getCurrentPinKey();
         sessionStorage.setItem(`${key}_unlocked`, 'true');
+        localStorage.setItem('barberpro_pin_dismissed', 'true');
         setNeedsPinSetup(false);
+    }, [getCurrentPinKey]);
+
+    const lock = useCallback(() => {
+        const key = getCurrentPinKey();
+        sessionStorage.removeItem(`${key}_unlocked`);
+        setIsLocked(true);
     }, [getCurrentPinKey]);
 
     const logout = useCallback(() => {
@@ -286,6 +294,7 @@ export function AuthProvider({ children }) {
         setPin,
         removePin,
         skipPinSetup,
+        lock,
         login,
         logout,
         switchBranch,

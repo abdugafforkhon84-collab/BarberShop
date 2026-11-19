@@ -67,7 +67,7 @@ TENANT_DATABASE_URL_TEMPLATE = os.getenv("TENANT_DATABASE_URL_TEMPLATE", "")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "change-this-to-a-long-random-secret-string")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200"))
 
 # The single platform owner account (creates/manages barbershops).
 SUPERADMIN_LOGIN = os.getenv("SUPERADMIN_LOGIN", "superadmin")

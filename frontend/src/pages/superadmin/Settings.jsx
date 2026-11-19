@@ -9,11 +9,11 @@
  */
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { KeyRound, Shield, Palette, LogOut, CheckCircle2, AlertCircle, Database, Download, Upload, Loader2 } from 'lucide-react';
+import { KeyRound, Shield, Palette, LogOut, CheckCircle2, AlertCircle, Database, Download, Upload, Loader2, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast';
 import PinScreen from '../../components/PinScreen';
-import { superadminApi } from '../../api';
+import { superadminApi, authApi } from '../../api';
 
 export default function SuperadminSettings() {
     const { logout, hasPin, removePin, fullName } = useAuth();
@@ -23,6 +23,35 @@ export default function SuperadminSettings() {
     const [isExporting, setIsExporting] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef(null);
+
+    const [pwdForm, setPwdForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    const [pwdLoading, setPwdLoading] = useState(false);
+    const [showPwd, setShowPwd] = useState(false);
+
+    async function handlePasswordChange(e) {
+        e.preventDefault();
+        if (pwdForm.newPassword.length < 4) {
+            showToast('Новый пароль должен быть не менее 4 символов', true);
+            return;
+        }
+        if (pwdForm.newPassword !== pwdForm.confirmPassword) {
+            showToast('Новые пароли не совпадают', true);
+            return;
+        }
+        setPwdLoading(true);
+        try {
+            await authApi.changePassword({
+                old_password: pwdForm.oldPassword || undefined,
+                new_password: pwdForm.newPassword,
+            });
+            showToast('Пароль успешно обновлён ✓');
+            setPwdForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+        } catch (err) {
+            showToast(err.response?.data?.detail || 'Ошибка смены пароля', true);
+        } finally {
+            setPwdLoading(false);
+        }
+    }
 
     function handleLogout() {
         logout();
@@ -156,6 +185,83 @@ export default function SuperadminSettings() {
                             Установить 4-значный ПИН-код
                         </button>
                     )}
+                </div>
+
+                {/* ── Password Change Card ── */}
+                <div className="card" style={{ padding: '18px 20px', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                        <div style={{
+                            width: 40, height: 40, borderRadius: 12,
+                            background: 'rgba(234, 179, 8, 0.12)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: '#eab308'
+                        }}>
+                            <Lock size={20} />
+                        </div>
+                        <div>
+                            <div style={{ fontWeight: 700, fontSize: 15 }}>Смена пароля суперадмина</div>
+                            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Вход для владельца платформы</div>
+                        </div>
+                    </div>
+
+                    <form onSubmit={handlePasswordChange} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                            <label style={{ fontSize: 12, marginBottom: 4, display: 'block' }}>Текущий пароль (опционально)</label>
+                            <input
+                                type={showPwd ? 'text' : 'password'}
+                                className="form-control"
+                                placeholder="Введите старый пароль"
+                                value={pwdForm.oldPassword}
+                                onChange={(e) => setPwdForm({ ...pwdForm, oldPassword: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="form-group" style={{ margin: 0 }}>
+                            <label style={{ fontSize: 12, marginBottom: 4, display: 'block' }}>Новый пароль *</label>
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type={showPwd ? 'text' : 'password'}
+                                    className="form-control"
+                                    placeholder="Минимум 4 символа"
+                                    required
+                                    value={pwdForm.newPassword}
+                                    onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })}
+                                    style={{ paddingRight: 40 }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPwd(!showPwd)}
+                                    style={{
+                                        position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                                        background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4
+                                    }}
+                                >
+                                    {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="form-group" style={{ margin: 0 }}>
+                            <label style={{ fontSize: 12, marginBottom: 4, display: 'block' }}>Повторите новый пароль *</label>
+                            <input
+                                type={showPwd ? 'text' : 'password'}
+                                className="form-control"
+                                placeholder="Повторите новый пароль"
+                                required
+                                value={pwdForm.confirmPassword}
+                                onChange={(e) => setPwdForm({ ...pwdForm, confirmPassword: e.target.value })}
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            className="btn btn-outline"
+                            disabled={pwdLoading || !pwdForm.newPassword}
+                            style={{ minHeight: 40, marginTop: 4, fontSize: 13, borderColor: 'var(--border)' }}
+                        >
+                            {pwdLoading ? 'Сохранение...' : 'Обновить пароль'}
+                        </button>
+                    </form>
                 </div>
 
                 {/* ── Backup & Data Protection Card ── */}

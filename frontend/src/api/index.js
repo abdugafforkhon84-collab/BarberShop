@@ -19,6 +19,7 @@ export const authApi = {    login: (login, password) => {
     },
     me: () => client.get('/auth/me').then((r) => r.data),
     switchBranch: (target_slug) => client.post('/auth/switch-branch', { target_slug }).then(r => r.data),
+    changePassword: (data) => client.put('/auth/change-password', data).then(r => r.data),
 };
 
 // ---------------------------------------------------------------- Services
