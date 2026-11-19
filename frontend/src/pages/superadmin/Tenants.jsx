@@ -111,10 +111,10 @@ export default function SuperadminTenants() {
     const [showAdminPassword, setShowAdminPassword] = useState(false);
 
     useEffect(() => {
-        const open = modalOpen || !!renewModal || !!passwordTenant;
+        const open = modalOpen || !!renewModal || !!passwordTenant || !!confirmConfig;
         document.body.classList.toggle('modal-open', open);
         return () => document.body.classList.remove('modal-open');
-    }, [modalOpen, renewModal, passwordTenant]);
+    }, [modalOpen, renewModal, passwordTenant, confirmConfig]);
 
     useEffect(() => { load(); }, []);
 
@@ -252,10 +252,34 @@ export default function SuperadminTenants() {
         }
     }
 
-    async function toggleActive(t) {
-        await superadminApi.update(t.id, { is_active: !t.is_active });
-        showToast(t.is_active ? 'Барбершоп отключён' : 'Барбершоп включён');
-        load();
+    function toggleActive(t) {
+        if (t.is_active) {
+            setConfirmConfig({
+                title: 'Отключение барбершопа',
+                text: `Вы уверены, что хотите отключить барбершоп «${t.shop_name}»? Доступ к системе для его сотрудников будет приостановлен.`,
+                danger: true,
+                confirmText: 'Отключить',
+                action: async () => {
+                    try {
+                        await superadminApi.update(t.id, { is_active: false });
+                        showToast('Барбершоп отключён');
+                        load();
+                    } catch (err) {
+                        showToast(err.response?.data?.detail || 'Ошибка отключения', true);
+                    }
+                }
+            });
+        } else {
+            (async () => {
+                try {
+                    await superadminApi.update(t.id, { is_active: true });
+                    showToast('Барбершоп включён');
+                    load();
+                } catch (err) {
+                    showToast(err.response?.data?.detail || 'Ошибка включения', true);
+                }
+            })();
+        }
     }
 
     function resetPassword(t) {

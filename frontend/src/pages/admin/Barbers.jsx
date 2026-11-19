@@ -84,10 +84,34 @@ export default function AdminBarbers() {
     }
 
     // ── Other actions ──
-    async function toggleActive(b) {
-        await barbersApi.update(b.id, { is_active: !b.is_active });
-        showToast(b.is_active ? 'Барбер отключён' : 'Барбер включён');
-        load();
+    function toggleActive(b) {
+        if (b.is_active) {
+            setConfirmConfig({
+                title: 'Отключение барбера',
+                text: `Отключить барбера «${b.name}»? Он не сможет входить в систему и принимать новые записи.`,
+                danger: true,
+                confirmText: 'Отключить',
+                action: async () => {
+                    try {
+                        await barbersApi.update(b.id, { is_active: false });
+                        showToast('Барбер отключён');
+                        load();
+                    } catch (err) {
+                        showToast(err.response?.data?.detail || 'Ошибка отключения', true);
+                    }
+                }
+            });
+        } else {
+            (async () => {
+                try {
+                    await barbersApi.update(b.id, { is_active: true });
+                    showToast('Барбер включён');
+                    load();
+                } catch (err) {
+                    showToast(err.response?.data?.detail || 'Ошибка включения', true);
+                }
+            })();
+        }
     }
 
     function resetPassword(b) {
