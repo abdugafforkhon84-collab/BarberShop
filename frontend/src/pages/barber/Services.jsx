@@ -49,17 +49,49 @@ export default function BarberServices() {
                 </div>
             </div>
 
-            <div className="grid grid-3" style={{ marginBottom: 36 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 32 }}>
                 {loading && <p className="empty-state">Загрузка...</p>}
                 {!loading && services.length === 0 && <p className="empty-state">Услуги пока не добавлены</p>}
                 {services.map((s) => (
-                    <div className="card" key={s.id}>
-                        <h3 style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <Scissors size={18} color="var(--green)" />
-                            <span>{s.name}</span>
-                        </h3>
-                        <div style={{ color: 'var(--green)', fontSize: 22, fontWeight: 800, marginBottom: 4 }}>{formatMoney(s.price)}</div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{s.duration} мин</div>
+                    <div
+                        className="card"
+                        key={s.id}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '10px 14px',
+                            gap: 12,
+                            borderRadius: 12,
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                            <div style={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: 8,
+                                background: 'rgba(51,209,122,0.12)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'var(--green)',
+                                flexShrink: 0
+                            }}>
+                                <Scissors size={16} />
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                                <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {s.name}
+                                </div>
+                                <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 1 }}>
+                                    {s.duration} мин
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ color: 'var(--green)', fontSize: 14.5, fontWeight: 800, whiteSpace: 'nowrap' }}>
+                            {formatMoney(s.price)}
+                        </div>
                     </div>
                 ))}
             </div>
@@ -68,39 +100,52 @@ export default function BarberServices() {
                 <>
                     <div className="page-header" style={{ marginBottom: 16 }}>
                         <div>
-                            <h2 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <Sparkles size={20} color="var(--green)" />
+                            <h2 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <Sparkles size={18} color="var(--green)" />
                                 <span>Дополнительные услуги</span>
                             </h2>
-                            <div className="subtitle">Доступны для добавления к счёту при оплате</div>
+                            <div className="subtitle" style={{ fontSize: 12 }}>Доступны для добавления к счёту при оплате</div>
                         </div>
                     </div>
 
-                    <div className="grid grid-3">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 32 }}>
                         {extraServices.map((extra) => {
                             const IconComponent = ICON_MAP[extra.icon] || Sparkles;
                             return (
-                                <div className="card" key={extra.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px' }}>
-                                    <div style={{
-                                        width: 44,
-                                        height: 44,
-                                        borderRadius: 12,
-                                        background: 'var(--green-glow)',
+                                <div
+                                    className="card"
+                                    key={extra.id}
+                                    style={{
                                         display: 'flex',
                                         alignItems: 'center',
-                                        justifyContent: 'center',
-                                        color: 'var(--green)',
-                                        flexShrink: 0
-                                    }}>
-                                        <IconComponent size={22} />
+                                        justifyContent: 'space-between',
+                                        padding: '10px 14px',
+                                        gap: 12,
+                                        borderRadius: 12,
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                                        <div style={{
+                                            width: 34,
+                                            height: 34,
+                                            borderRadius: 8,
+                                            background: 'var(--green-glow)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: 'var(--green)',
+                                            flexShrink: 0
+                                        }}>
+                                            <IconComponent size={16} />
+                                        </div>
+                                        <div style={{ minWidth: 0 }}>
+                                            <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {extra.name}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-main)' }}>
-                                            {extra.name}
-                                        </div>
-                                        <div style={{ color: 'var(--green)', fontSize: 14, fontWeight: 700, marginTop: 2 }}>
-                                            +{formatMoney(extra.price)}
-                                        </div>
+                                    <div style={{ color: 'var(--green)', fontSize: 14.5, fontWeight: 800, whiteSpace: 'nowrap' }}>
+                                        +{formatMoney(extra.price)}
                                     </div>
                                 </div>
                             );

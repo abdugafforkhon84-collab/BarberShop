@@ -171,47 +171,136 @@ export default function AdminBarbers() {
             {loading && <p className="empty-state">Загрузка...</p>}
             {!loading && barbers.length === 0 && <p className="empty-state">Барберов пока нет — добавьте первого</p>}
 
-            <div className="grid grid-3">
+            {/* Barbers List (Row-based / Строчный вид) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 32 }}>
                 {barbers.map((b) => (
-                    <div className="card" key={b.id}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                            <h3>{b.full_name}</h3>
-                            <span className={`badge ${b.is_active ? 'badge-done' : 'badge-cancelled'}`}>
-                                {b.is_active ? 'Активен' : 'Отключён'}
-                            </span>
-                        </div>
+                    <div
+                        className="card"
+                        key={b.id}
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            padding: '10px 14px',
+                            borderRadius: 12,
+                            gap: 8,
+                            transition: 'all 0.15s ease',
+                        }}
+                    >
+                        {/* Top Main Row */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                            {/* Left: Avatar + Name + Badges */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                                <div style={{
+                                    width: 34,
+                                    height: 34,
+                                    borderRadius: '50%',
+                                    background: b.is_active ? 'rgba(51,209,122,0.12)' : 'rgba(239,68,68,0.12)',
+                                    color: b.is_active ? 'var(--green)' : 'var(--status-cancelled)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 700,
+                                    fontSize: 13.5,
+                                    flexShrink: 0
+                                }}>
+                                    {b.full_name ? b.full_name.charAt(0).toUpperCase() : <User size={15} />}
+                                </div>
 
-                        <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 2 }}>Логин</div>
-                        <div style={{ marginBottom: 10 }}>
-                            <code style={{ background: 'var(--bg-panel)', padding: '4px 8px', borderRadius: 6, fontSize: 13 }}>{b.login}</code>
-                        </div>
+                                <div style={{ minWidth: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                        <span style={{
+                                            fontWeight: 700,
+                                            fontSize: 13.5,
+                                            color: 'var(--text-main)',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
+                                        }}>
+                                            {b.full_name}
+                                        </span>
+                                        <span className={`badge ${b.is_active ? 'badge-done' : 'badge-cancelled'}`} style={{ fontSize: 9.5, padding: '1px 6px', flexShrink: 0 }}>
+                                            {b.is_active ? 'Активен' : 'Отключён'}
+                                        </span>
+                                    </div>
 
-                        {b.phone && <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}><Phone size={12} /> {b.phone}</div>}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2, flexWrap: 'wrap' }}>
+                                        {b.phone && (
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                                <Phone size={10} /> {b.phone}
+                                            </span>
+                                        )}
+                                        <span>
+                                            Логин: <code style={{ background: 'var(--bg-panel)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>{b.login}</code>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
 
-                        {/* Percent badge — clickable */}
+                            {/* Salary badge (Clickable to edit) */}
                             <div
-                            style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 6,
-                                background: 'rgba(51,209,122,0.1)', border: '1px solid var(--green)',
-                                borderRadius: 999, padding: '4px 12px', marginBottom: 14,
-                                cursor: 'pointer', transition: 'background 0.18s',
-                            }}
-                            onClick={() => openEditSalary(b)}
-                            title="Нажмите чтобы изменить зарплату"
-                        >
-                            <Percent size={13} style={{ color: 'var(--green)' }} />
-                            <span style={{ color: 'var(--green)', fontWeight: 700, fontSize: 14 }}>
-                                {b.salary_type === 'fixed' ? 'Оклад' : b.salary_type === 'daily' ? 'Ставка/день' : 'Процент'}: {b.salary_amount ?? b.barber_percent ?? 50}{b.salary_type === 'percent' ? '%' : '₸'}
-                            </span>
-                            <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>изменить</span>
+                                onClick={() => openEditSalary(b)}
+                                title="Нажмите чтобы изменить зарплату"
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    background: 'rgba(51,209,122,0.1)',
+                                    border: '1px solid var(--green)',
+                                    borderRadius: 999,
+                                    padding: '3px 8px',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.15s',
+                                    flexShrink: 0,
+                                }}
+                            >
+                                <Percent size={11} style={{ color: 'var(--green)' }} />
+                                <span style={{ color: 'var(--green)', fontWeight: 700, fontSize: 12 }}>
+                                    {b.salary_type === 'fixed' ? 'Оклад' : b.salary_type === 'daily' ? 'Ставка/день' : 'Процент'}: {b.salary_amount ?? b.barber_percent ?? 50}{b.salary_type === 'percent' ? '%' : '₸'}
+                                </span>
+                            </div>
                         </div>
 
-                        <div style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 16 }}>Добавлен {formatDate(b.created_at?.slice(0, 10))}</div>
+                        {/* Bottom Actions Row */}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            paddingTop: 8,
+                            borderTop: '1px solid var(--border)',
+                            gap: 6,
+                        }}>
+                            <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                                Добавлен {formatDate(b.created_at?.slice(0, 10))}
+                            </div>
 
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            <button className="btn btn-sm btn-outline" onClick={() => resetPassword(b)}><KeyRound size={14} /> Пароль</button>
-                            <button className="btn btn-sm btn-outline" onClick={() => toggleActive(b)}><Power size={14} /> {b.is_active ? 'Отключить' : 'Включить'}</button>
-                            <button className="btn btn-sm btn-danger" onClick={() => remove(b)}><Trash2 size={14} /></button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <button
+                                    className="btn btn-sm btn-outline"
+                                    onClick={() => resetPassword(b)}
+                                    title="Сменить пароль"
+                                    style={{ height: 28, padding: '0 8px', fontSize: 11.5, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                >
+                                    <KeyRound size={12} />
+                                    <span>Пароль</span>
+                                </button>
+                                <button
+                                    className="btn btn-sm btn-outline"
+                                    onClick={() => toggleActive(b)}
+                                    title={b.is_active ? 'Отключить' : 'Включить'}
+                                    style={{ height: 28, padding: '0 8px', fontSize: 11.5, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                >
+                                    <Power size={12} />
+                                    <span>{b.is_active ? 'Отключить' : 'Включить'}</span>
+                                </button>
+                                <button
+                                    className="btn btn-sm btn-danger"
+                                    onClick={() => remove(b)}
+                                    title="Удалить барбера"
+                                    style={{ height: 28, width: 28, padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                    <Trash2 size={12} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ))}

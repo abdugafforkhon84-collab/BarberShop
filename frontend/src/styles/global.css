@@ -1239,22 +1239,22 @@ button { font-family: inherit; cursor: pointer; }
 .kpi-cube-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 8px;
+    margin-bottom: 16px;
 }
 @media (min-width: 768px) {
     .kpi-cube-grid {
         grid-template-columns: repeat(4, 1fr) !important;
-        gap: 14px;
+        gap: 12px;
     }
 }
 .kpi-cube {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 12px 14px;
+    padding: 10px 12px;
     border-radius: var(--radius-md);
-    min-height: 106px;
+    min-height: 78px;
     transition: transform 0.15s ease;
 }
 .kpi-cube:hover {
@@ -1263,6 +1263,33 @@ button { font-family: inherit; cursor: pointer; }
 
 /* ---------------- One-Handed Mobile Ergonomics ---------------- */
 @media (max-width: 600px) {
+    .kpi-cube-grid {
+        gap: 6px !important;
+        margin-bottom: 14px !important;
+    }
+    .kpi-cube {
+        padding: 8px 10px !important;
+        min-height: 70px !important;
+        border-radius: 10px !important;
+    }
+    .kpi-cube .kpi-icon-box {
+        width: 26px !important;
+        height: 26px !important;
+        border-radius: 7px !important;
+    }
+    .kpi-cube .kpi-icon-box svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+    .kpi-cube .kpi-value {
+        font-size: 1.05rem !important;
+    }
+    .kpi-cube .kpi-label {
+        font-size: 10px !important;
+    }
+    .kpi-cube .kpi-sub {
+        font-size: 9px !important;
+    }
     .main-content {
         padding: 14px 14px 84px 14px !important;
     }

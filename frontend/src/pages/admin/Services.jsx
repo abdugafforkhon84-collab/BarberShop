@@ -245,36 +245,104 @@ export default function AdminServices() {
                 </button>
             </div>
 
-            <div className="grid grid-3" style={{ marginBottom: 36 }}>
+            {/* Main Services List (Row-based / Строчный вид) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 32 }}>
                 {loading && <p className="empty-state">Загрузка...</p>}
                 {!loading && services.length === 0 && <p className="empty-state">Услуг пока нет</p>}
                 {services.map((s) => (
-                    <div className="card" key={s.id} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                        <div>
-                            <h3 style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <Scissors size={18} color="var(--green)" />
-                                <span>{s.name}</span>
-                            </h3>
-                            <div style={{ color: 'var(--green)', fontSize: 22, fontWeight: 800, marginBottom: 4 }}>{formatMoney(s.price)}</div>
-                            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>{s.duration} мин</div>
+                    <div
+                        className="card"
+                        key={s.id}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '10px 14px',
+                            gap: 12,
+                            borderRadius: 12,
+                            transition: 'all 0.15s ease',
+                        }}
+                    >
+                        {/* Left: Icon + Name & duration */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                            <div style={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: 8,
+                                background: 'rgba(51,209,122,0.12)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'var(--green)',
+                                flexShrink: 0
+                            }}>
+                                <Scissors size={16} />
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                                <div style={{
+                                    fontWeight: 700,
+                                    fontSize: 13.5,
+                                    color: 'var(--text-main)',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                }}>
+                                    {s.name}
+                                </div>
+                                <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 1 }}>
+                                    {s.duration} мин
+                                </div>
+                            </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+
+                        {/* Right: Price + Action buttons */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                            <div style={{
+                                color: 'var(--green)',
+                                fontSize: 14.5,
+                                fontWeight: 800,
+                                whiteSpace: 'nowrap',
+                                marginRight: 4
+                            }}>
+                                {formatMoney(s.price)}
+                            </div>
                             <button 
-                                className="btn btn-sm btn-outline" 
+                                type="button"
+                                className="btn btn-outline" 
                                 onClick={() => openEditMain(s)} 
-                                style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 40, fontSize: 13, fontWeight: 600 }}
+                                title="Изменить услугу"
+                                style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 8,
+                                    padding: 0,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderColor: 'var(--border)',
+                                    background: 'var(--bg-panel)',
+                                    cursor: 'pointer',
+                                }}
                             >
-                                <Edit2 size={16} color="var(--green)" />
-                                <span>Изменить</span>
+                                <Edit2 size={14} color="var(--green)" />
                             </button>
                             <button 
-                                className="btn btn-sm btn-danger" 
+                                type="button"
+                                className="btn btn-danger" 
                                 onClick={() => removeMain(s.id)}
-                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 40, padding: '0 14px', fontSize: 13 }}
                                 title="Удалить услугу"
+                                style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 8,
+                                    padding: 0,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                }}
                             >
-                                <Trash2 size={16} />
-                                <span>Удалить</span>
+                                <Trash2 size={14} />
                             </button>
                         </div>
                     </div>
@@ -284,31 +352,45 @@ export default function AdminServices() {
             {/* 2. Additional Services Header & Custom Grid */}
             <div className="page-header" style={{ marginBottom: 16 }}>
                 <div>
-                    <h2 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Sparkles size={20} color="var(--green)" />
+                    <h2 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Sparkles size={18} color="var(--green)" />
                         <span>Дополнительные услуги</span>
                     </h2>
-                    <div className="subtitle">Услуги с персональными иконками, которые мастер может добавить при оплате</div>
+                    <div className="subtitle" style={{ fontSize: 12 }}>Услуги с персональными иконками, которые мастер может добавить при оплате</div>
                 </div>
-                <button className="btn btn-outline" onClick={openCreateExtra} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <Plus size={16} />
+                <button className="btn btn-outline btn-sm" onClick={openCreateExtra} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34 }}>
+                    <Plus size={15} />
                     <span>Добавить доп. услугу</span>
                 </button>
             </div>
 
-            <div className="grid grid-3" style={{ marginBottom: 32 }}>
+            {/* Extra Services List (Row-based / Строчный вид) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 32 }}>
                 {extraServices.length === 0 && (
                     <p className="empty-state">Дополнительных услуг пока нет. Нажмите «+ Добавить доп. услугу».</p>
                 )}
                 {extraServices.map((extra) => {
                     const IconComponent = ICON_MAP[extra.icon] || Droplets;
                     return (
-                        <div className="card" key={extra.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div
+                            className="card"
+                            key={extra.id}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '10px 14px',
+                                gap: 12,
+                                borderRadius: 12,
+                                transition: 'all 0.15s ease',
+                            }}
+                        >
+                            {/* Left: Icon + Name */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
                                 <div style={{
-                                    width: 48,
-                                    height: 48,
-                                    borderRadius: 14,
+                                    width: 34,
+                                    height: 34,
+                                    borderRadius: 8,
                                     background: 'var(--green-glow)',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -316,38 +398,52 @@ export default function AdminServices() {
                                     color: 'var(--green)',
                                     flexShrink: 0
                                 }}>
-                                    <IconComponent size={24} />
+                                    <IconComponent size={16} />
                                 </div>
-                                <div>
-                                    <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-main)' }}>
+                                <div style={{ minWidth: 0 }}>
+                                    <div style={{
+                                        fontWeight: 700,
+                                        fontSize: 13.5,
+                                        color: 'var(--text-main)',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
+                                    }}>
                                         {extra.name}
-                                    </div>
-                                    <div style={{ color: 'var(--green)', fontSize: 15, fontWeight: 800, marginTop: 2 }}>
-                                        +{formatMoney(extra.price)}
                                     </div>
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+
+                            {/* Right: Price + Action buttons */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                                <div style={{
+                                    color: 'var(--green)',
+                                    fontSize: 14.5,
+                                    fontWeight: 800,
+                                    whiteSpace: 'nowrap',
+                                    marginRight: 4
+                                }}>
+                                    +{formatMoney(extra.price)}
+                                </div>
                                 <button 
                                     type="button"
                                     className="btn btn-outline" 
                                     onClick={() => openEditExtra(extra)} 
                                     title="Изменить доп. услугу"
                                     style={{ 
-                                        width: 42, 
-                                        height: 42, 
-                                        borderRadius: 12,
+                                        width: 32, 
+                                        height: 32, 
+                                        borderRadius: 8,
                                         padding: 0,
-                                        display: 'flex',
+                                        display: 'inline-flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         borderColor: 'var(--border)',
                                         background: 'var(--bg-panel)',
                                         cursor: 'pointer',
-                                        boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                                     }}
                                 >
-                                    <Edit2 size={20} color="var(--green)" />
+                                    <Edit2 size={14} color="var(--green)" />
                                 </button>
                                 <button 
                                     type="button"
@@ -355,18 +451,17 @@ export default function AdminServices() {
                                     onClick={() => removeExtra(extra.id)} 
                                     title="Удалить доп. услугу"
                                     style={{ 
-                                        width: 42, 
-                                        height: 42, 
-                                        borderRadius: 12,
+                                        width: 32, 
+                                        height: 32, 
+                                        borderRadius: 8,
                                         padding: 0,
-                                        display: 'flex',
+                                        display: 'inline-flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         cursor: 'pointer',
-                                        boxShadow: '0 2px 6px rgba(239,68,68,0.2)'
                                     }}
                                 >
-                                    <Trash2 size={20} />
+                                    <Trash2 size={14} />
                                 </button>
                             </div>
                         </div>
