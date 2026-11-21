@@ -47,6 +47,7 @@ export const adminBookingsApi = {
     list: (params) => client.get('/admin/bookings', { params }).then((r) => r.data),
     create: (data) => client.post('/admin/bookings', data).then((r) => r.data),
     update: (id, data) => client.put(`/admin/bookings/${id}`, data).then((r) => r.data),
+    pay: (id, data) => client.post(`/admin/bookings/${id}/pay`, data).then((r) => r.data),
     remove: (id) => client.delete(`/admin/bookings/${id}`).then((r) => r.data),
 };
 

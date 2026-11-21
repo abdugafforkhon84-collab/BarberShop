@@ -124,9 +124,16 @@ def build_admin_summary(db: Session, date_from: date, date_to: date, barber_id: 
 
     for b in bookings:
         client_ids.add(b.client_id)
-        if b.status == models.BookingStatus.done:
+        if b.status == models.BookingStatus.done or b.is_paid or (b.total_paid is not None and b.total_paid > 0):
             done_count += 1
-            amt = b.total_paid if (b.is_paid and b.total_paid is not None) else b.price
+            if b.total_paid is not None and b.total_paid > 0:
+                amt = float(b.total_paid)
+            elif b.is_paid and b.total_paid is not None:
+                amt = float(b.total_paid)
+            elif b.service and b.service.price:
+                amt = float(b.service.price)
+            else:
+                amt = float(b.price or 0.0)
             revenue += amt
             if b.service:
                 service_counts[b.service.name] += 1
@@ -177,10 +184,17 @@ def build_barber_summary(db: Session, barber_id: int, date_from: date, date_to: 
             declined += 1
         elif b.status == models.BookingStatus.pending:
             pending += 1
-        elif b.status == models.BookingStatus.done:
+        elif b.status == models.BookingStatus.done or b.is_paid or (b.total_paid is not None and b.total_paid > 0):
             accepted += 1
             done += 1
-            amt = b.total_paid if (b.is_paid and b.total_paid is not None) else b.price
+            if b.total_paid is not None and b.total_paid > 0:
+                amt = float(b.total_paid)
+            elif b.is_paid and b.total_paid is not None:
+                amt = float(b.total_paid)
+            elif b.service and b.service.price:
+                amt = float(b.service.price)
+            else:
+                amt = float(b.price or 0.0)
             revenue += amt
             daily_revenue[b.date.isoformat()] += amt
 

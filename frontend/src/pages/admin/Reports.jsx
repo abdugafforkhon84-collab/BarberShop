@@ -23,18 +23,25 @@ import { useAuth } from '../../context/AuthContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
+function toLocalDateStr(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
 function monthStart() {
     const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+    return toLocalDateStr(new Date(d.getFullYear(), d.getMonth(), 1));
 }
 function weekStart() {
     const d = new Date();
     const day = d.getDay() === 0 ? 7 : d.getDay();
     d.setDate(d.getDate() - (day - 1));
-    return d.toISOString().slice(0, 10);
+    return toLocalDateStr(d);
 }
 function today() {
-    return new Date().toISOString().slice(0, 10);
+    return toLocalDateStr(new Date());
 }
 
 function formatDateLabel(dateStr) {
@@ -49,6 +56,7 @@ function formatDateLabel(dateStr) {
 export default function AdminReports() {
     const [dateFrom, setDateFrom] = useState(monthStart());
     const [dateTo, setDateTo] = useState(today());
+    const [activePreset, setActivePreset] = useState('month');
     const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
@@ -88,10 +96,12 @@ export default function AdminReports() {
 
     function handleFilter(e) {
         e.preventDefault();
+        setActivePreset('');
         load();
     }
 
     function applyPreset(preset) {
+        setActivePreset(preset);
         let from = today();
         let to = today();
         if (preset === 'today') {
@@ -106,7 +116,10 @@ export default function AdminReports() {
         } else if (preset === 'days30') {
             const d = new Date();
             d.setDate(d.getDate() - 30);
-            from = d.toISOString().slice(0, 10);
+            from = toLocalDateStr(d);
+            to = today();
+        } else if (preset === 'all') {
+            from = '2025-01-01';
             to = today();
         }
         setDateFrom(from);
@@ -198,18 +211,62 @@ export default function AdminReports() {
                 </button>
             </div>
 
+            {/* Quick Period Switcher Pills (Always visible) */}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto', paddingBottom: 2 }}>
+                <button
+                    type="button"
+                    className={`btn btn-sm ${activePreset === 'today' ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ height: 30, fontSize: 12, padding: '0 12px', whiteSpace: 'nowrap' }}
+                    onClick={() => applyPreset('today')}
+                >
+                    Сегодня
+                </button>
+                <button
+                    type="button"
+                    className={`btn btn-sm ${activePreset === 'week' ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ height: 30, fontSize: 12, padding: '0 12px', whiteSpace: 'nowrap' }}
+                    onClick={() => applyPreset('week')}
+                >
+                    Неделя
+                </button>
+                <button
+                    type="button"
+                    className={`btn btn-sm ${activePreset === 'month' ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ height: 30, fontSize: 12, padding: '0 12px', whiteSpace: 'nowrap' }}
+                    onClick={() => applyPreset('month')}
+                >
+                    Этот месяц
+                </button>
+                <button
+                    type="button"
+                    className={`btn btn-sm ${activePreset === 'days30' ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ height: 30, fontSize: 12, padding: '0 12px', whiteSpace: 'nowrap' }}
+                    onClick={() => applyPreset('days30')}
+                >
+                    30 дней
+                </button>
+                <button
+                    type="button"
+                    className={`btn btn-sm ${activePreset === 'all' ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ height: 30, fontSize: 12, padding: '0 12px', whiteSpace: 'nowrap' }}
+                    onClick={() => applyPreset('all')}
+                >
+                    Всё время
+                </button>
+            </div>
+
             {/* Presets & Filter Panel */}
             {showFilters && (
                 <div className="card" style={{ padding: '14px 16px', marginBottom: 16, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
-                    {/* Period Presets: 3 equal buttons full width */}
+                    {/* Period Presets: 4 equal buttons */}
                     <div style={{ marginBottom: 12 }}>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <CalendarDays size={13} /> Быстрый выбор периода
+                            <CalendarDays size={13} /> Выбор периода
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                             <button
                                 type="button"
-                                className="btn btn-outline"
+                                className={`btn ${activePreset === 'today' ? 'btn-primary' : 'btn-outline'}`}
                                 style={{ height: 34, fontSize: 12, padding: 0, justifyContent: 'center' }}
                                 onClick={() => applyPreset('today')}
                             >
@@ -217,7 +274,7 @@ export default function AdminReports() {
                             </button>
                             <button
                                 type="button"
-                                className="btn btn-outline"
+                                className={`btn ${activePreset === 'week' ? 'btn-primary' : 'btn-outline'}`}
                                 style={{ height: 34, fontSize: 12, padding: 0, justifyContent: 'center' }}
                                 onClick={() => applyPreset('week')}
                             >
@@ -225,11 +282,19 @@ export default function AdminReports() {
                             </button>
                             <button
                                 type="button"
-                                className="btn btn-outline"
+                                className={`btn ${activePreset === 'month' ? 'btn-primary' : 'btn-outline'}`}
                                 style={{ height: 34, fontSize: 12, padding: 0, justifyContent: 'center' }}
                                 onClick={() => applyPreset('month')}
                             >
                                 Месяц
+                            </button>
+                            <button
+                                type="button"
+                                className={`btn ${activePreset === 'all' ? 'btn-primary' : 'btn-outline'}`}
+                                style={{ height: 34, fontSize: 12, padding: 0, justifyContent: 'center' }}
+                                onClick={() => applyPreset('all')}
+                            >
+                                Всё время
                             </button>
                         </div>
                     </div>

@@ -196,21 +196,30 @@ export default function PaymentModal({ booking, onClose, onSuccess, role = 'admi
         try {
             const serviceIdNum = selectedServiceId ? Number(selectedServiceId) : null;
             
+            // Format today's local date YYYY-MM-DD
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            // If paying a booking whose appointment date is in the past, update date to today so today's report and revenue record it
+            const payDate = (booking.date && booking.date < todayStr) ? todayStr : booking.date;
+
+            const payPayload = {
+                service_id: serviceIdNum,
+                extra_services: selectedExtras,
+                payment_method: payMethod,
+                total_paid: finalAmount,
+                is_paid: true,
+                status: 'done',
+                date: payDate
+            };
+
             if (role === 'barber') {
-                await barberApi.pay(booking.id, {
-                    service_id: serviceIdNum,
-                    extra_services: selectedExtras,
-                    payment_method: payMethod,
-                    total_paid: finalAmount
-                });
+                await barberApi.pay(booking.id, payPayload);
             } else {
-                await adminBookingsApi.update(booking.id, {
-                    service_id: serviceIdNum,
-                    extra_services: selectedExtras,
-                    payment_method: payMethod,
-                    total_paid: finalAmount,
-                    status: 'done'
-                });
+                try {
+                    await adminBookingsApi.pay(booking.id, payPayload);
+                } catch {
+                    await adminBookingsApi.update(booking.id, payPayload);
+                }
             }
 
             showToast('Оплата успешно зафиксирована ✓');

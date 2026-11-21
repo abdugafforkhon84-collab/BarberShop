@@ -28,6 +28,7 @@ import os
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
@@ -325,9 +326,15 @@ def platform_overview(db: Session = Depends(get_master_db)):
 
             total_bookings = tdb.query(models.Booking).count()
 
-            done_bookings = tdb.query(models.Booking).filter(
-                models.Booking.status == models.BookingStatus.done
-            ).count()
+            done_paid_rows = tdb.query(models.Booking).filter(
+                or_(
+                    models.Booking.status == models.BookingStatus.done,
+                    models.Booking.is_paid == True,
+                    models.Booking.total_paid > 0,
+                )
+            ).all()
+
+            done_bookings = len(done_paid_rows)
 
             today_bookings = tdb.query(models.Booking).filter(
                 models.Booking.date == today,
@@ -337,12 +344,8 @@ def platform_overview(db: Session = Depends(get_master_db)):
                 ])
             ).count()
 
-            # Sum all total_paid (or price for done but unpaid)
-            done_paid_rows = tdb.query(models.Booking).filter(
-                models.Booking.status == models.BookingStatus.done
-            ).all()
             revenue = sum(
-                (b.total_paid if b.is_paid and b.total_paid else b.price)
+                (float(b.total_paid) if (b.total_paid is not None and b.total_paid > 0) else (float(b.service.price) if b.service and b.service.price else float(b.price or 0.0)))
                 for b in done_paid_rows
             )
 

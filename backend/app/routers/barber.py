@@ -195,8 +195,9 @@ def pay_booking(
     booking.status = models.BookingStatus.done
 
     # Update service if provided (barber selects service at payment time)
-    if payload.service_id:
-        service = db.query(models.Service).filter(models.Service.id == payload.service_id).first()
+    target_service_id = payload.service_id or booking.service_id
+    if target_service_id:
+        service = db.query(models.Service).filter(models.Service.id == target_service_id).first()
         if service:
             booking.service_id = service.id
             booking.price = service.price
@@ -206,6 +207,8 @@ def pay_booking(
     booking.payment_method = payload.payment_method
     booking.is_paid = True
     booking.total_paid = payload.total_paid
+    if booking.date < date.today():
+        booking.date = date.today()
 
     db.commit()
     db.refresh(booking)

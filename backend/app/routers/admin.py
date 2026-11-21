@@ -30,6 +30,7 @@ from datetime import date, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
@@ -193,8 +194,58 @@ def update_booking(booking_id: int, payload: schemas.BookingUpdate, db: Session 
                 import uuid
                 booking.client.phone = f"no-phone-{uuid.uuid4().hex[:8]}"
 
+    # Automatically handle payment / completion
+    if ("total_paid" in data and data["total_paid"] is not None) or ("payment_method" in data and data["payment_method"]) or data.get("is_paid"):
+        booking.is_paid = True
+        booking.status = models.BookingStatus.done
+        if booking.date < date.today():
+            booking.date = date.today()
+
+    if "service_id" in data and data["service_id"]:
+        service = db.query(models.Service).get(data["service_id"])
+        if service:
+            booking.service_id = service.id
+            if not booking.price or booking.price == 0:
+                booking.price = service.price
+            if not booking.duration or booking.duration == 30:
+                booking.duration = service.duration
+
     for field, value in data.items():
         setattr(booking, field, value)
+
+    db.commit()
+    db.refresh(booking)
+    return booking_to_out(booking)
+
+
+@router.post("/bookings/{booking_id}/pay", response_model=schemas.BookingOut)
+def admin_pay_booking(
+    booking_id: int,
+    payload: schemas.BookingPayRequest,
+    db: Session = Depends(get_tenant_db),
+):
+    import json as _json
+    booking = db.query(models.Booking).get(booking_id)
+    if not booking:
+        raise HTTPException(status_code=404, detail="Запись не найдена")
+    if booking.status == models.BookingStatus.cancelled:
+        raise HTTPException(status_code=400, detail="Нельзя оплатить отмененную запись")
+
+    booking.status = models.BookingStatus.done
+    target_service_id = payload.service_id or booking.service_id
+    if target_service_id:
+        service = db.query(models.Service).filter(models.Service.id == target_service_id).first()
+        if service:
+            booking.service_id = service.id
+            booking.price = service.price
+            booking.duration = service.duration
+
+    booking.extra_services = _json.dumps(payload.extra_services or [])
+    booking.payment_method = payload.payment_method
+    booking.is_paid = True
+    booking.total_paid = payload.total_paid
+    if booking.date < date.today():
+        booking.date = date.today()
 
     db.commit()
     db.refresh(booking)
@@ -237,12 +288,12 @@ def get_payment_balances(db: Session = Depends(get_tenant_db)):
         # Calculate earned from completed, paid bookings
         bookings = db.query(models.Booking).filter(
             models.Booking.barber_id == barber.id,
-            models.Booking.is_paid == True
+            or_(models.Booking.is_paid == True, models.Booking.total_paid > 0)
         ).all()
         
         total_earned = 0.0
         for b in bookings:
-            amount = b.total_paid if b.total_paid is not None else b.price
+            amount = b.total_paid if (b.total_paid is not None and b.total_paid > 0) else (b.service.price if b.service and b.service.price else b.price or 0.0)
             total_earned += float(amount) * (float(barber.barber_percent) / 100.0)
             
         # Calculate already paid
